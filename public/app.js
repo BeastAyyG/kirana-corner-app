@@ -121,9 +121,9 @@
     }
     const stale = lines.some(({ product, qty }) => qty > product.available);
     const priceChanged=lines.some(({product})=>state.quotePrices[product.id]&&Number(state.quotePrices[product.id])!==product.price_minor);
+    const priceNote=({product})=>state.quotePrices[product.id]&&Number(state.quotePrices[product.id])!==product.price_minor?`<div class="basket-item-meta">Price changed from ${money(state.quotePrices[product.id])} to ${money(product.price_minor)} each</div>`:'';
     const contents = lines.map(({ product, qty }) => `<div class="basket-line"><div><div class="basket-item-name">${html(product.name)} × ${qty}</div><div class="basket-item-meta">${html(product.unit)} · ${product.available} currently available</div>${priceNote({product})}</div><div class="basket-item-total">${money(product.price_minor * qty)}</div></div>`).join('');
     const warning = stale ? '<p class="cart-warning">Shelf stock changed. Reduce the marked quantities before placing this order.</p>' : priceChanged ? '<p class="cart-warning">One or more prices changed. Review the updated total before placing the order.</p>' : '';
-    const priceNote=({product})=>state.quotePrices[product.id]&&Number(state.quotePrices[product.id])!==product.price_minor?`<div class="basket-item-meta">Price changed from ${money(state.quotePrices[product.id])} to ${money(product.price_minor)} each</div>`:'';
     $('basketContent').innerHTML = `${contents}${warning}${renderSlots()}${renderTotals()}<button class="primary-button checkout-button" id="placeOrder" type="button" ${!state.slotId || state.loading || stale ? 'disabled' : ''}>${state.loading ? 'Placing order…' : 'Place pickup order'}</button><p class="fine-print">No online payment · pay at the shop</p>`;
   }
   function renderSlots() {

@@ -1,10 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createAppServer } from '../src/server.js';
+
+test('basket price-note helper is initialized before item rendering', () => {
+  const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('function renderBasket()');
+  const end=source.indexOf('function renderSlots()',start);
+  assert.ok(start>=0&&end>start,'basket renderer should exist');
+  const renderer=source.slice(start,end);
+  const note=renderer.indexOf('const priceNote=');
+  const items=renderer.indexOf('const contents = lines.map');
+  assert.ok(note>=0&&items>=0&&note<items,'priceNote must be initialized before rendering item lines');
+});
+
 import { createSession, openDatabase } from '../src/db.js';
 
 async function fixture({ production = false, extraStore = false } = {}) {
