@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183f32">
+  <meta name="description" content="Order groceries from a nearby shop and collect them in an evening pickup slot.">
+  <title>Kirana Corner · Local pickup</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="site-strip">PILOT BUILD · SAMPLE STORE, SAMPLE ACCOUNTS · PAY AT STORE</div>
+  <header class="topbar">
+    <a class="brand" href="/customer" aria-label="Kirana Corner home">
+      <span class="brand-mark" aria-hidden="true">⌂</span>
+      <span><strong>Kirana Corner</strong><small>SHOP NEARBY, PICK UP EASY</small></span>
+    </a>
+    <div class="topbar-meta"><span class="pin" aria-hidden="true">⌖</span><span id="storeLocation">Sample neighbourhood</span></div>
+    <div class="topbar-actions">
+      <span class="pilot-chip">Sample pilot</span>
+      <button class="text-button" id="refreshButton" type="button">Refresh</button>
+      <button class="text-button" id="signOutButton" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="heading-row">
+      <div>
+        <div class="eyebrow">LOCAL PICKUP · SELLER FULFILLED</div>
+        <h1>Good groceries.<br>Just around the corner.</h1>
+        <p id="pageIntro">Order from a neighbourhood shop’s shelf stock. The shop packs one labeled bag for your chosen pickup time.</p>
+      </div>
+      <nav class="role-nav" aria-label="App side" id="roleNav" hidden>
+        <a class="role-link" id="customerLink" href="/customer">Customer app</a>
+        <a class="role-link" id="sellerLink" href="/seller">Seller app</a>
+      </nav>
+    </section>
+
+    <section class="signin-card" id="signInPanel" hidden>
+      <div class="signin-copy"><div class="eyebrow">TRY THE PILOT</div><h2>Choose a sample account</h2><p>These accounts are for testing the two flows. No real customer or seller account is connected.</p></div>
+      <div class="signin-actions">
+        <button class="primary-button" id="shopperSignIn" type="button">Continue as shopper</button>
+        <button class="outline-button" id="sellerSignIn" type="button">Continue as shopkeeper</button>
+      </div>
+    </section>
+
+    <section class="workspace" id="customerView" hidden aria-label="Customer app">
+      <div class="store-band">
+        <div class="store-badge" aria-hidden="true">▦</div>
+        <div class="store-copy"><strong id="storeName">Saathi Kirana</strong><span id="storeCaption">Small-basket friendly · pickup from the front counter</span></div>
+        <label class="store-select-wrap" id="storeSelectWrap" hidden><span class="sr-only">Choose a shop</span><select id="storeSelect" aria-label="Choose a shop"></select></label>
+        <div class="pickup-today"><span class="clock" aria-hidden="true">◷</span><span id="slotZone">Evening pickup · local shop time</span></div>
+      </div>
+
+      <div class="shop-layout">
+        <section class="catalog" aria-labelledby="catalogTitle">
+          <div class="section-head catalog-head">
+            <div><h2 id="catalogTitle">On the shelf</h2><p>Stock currently listed by the shopkeeper</p></div>
+            <label class="search-wrap"><span class="sr-only">Search products</span><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search items" autocomplete="off"></label>
+          </div>
+          <div class="category-row" id="categoryRow" aria-label="Filter products"></div>
+          <div class="product-grid" id="productGrid" aria-live="polite"></div>
+          <section class="orders-section" aria-labelledby="ordersTitle">
+            <div class="section-head"><div><h2 id="ordersTitle">Your pickup orders</h2><p>Order progress stays here if you refresh.</p></div></div>
+            <div class="order-list" id="customerOrders"></div>
+          </section>
+        </section>
+
+        <aside class="basket-card" aria-labelledby="basketTitle">
+          <div class="basket-head"><h2 id="basketTitle">Your basket</h2><span class="count-badge" id="basketCount">0</span></div>
+          <div class="basket-content" id="basketContent"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="workspace" id="sellerView" hidden aria-label="Seller app">
+      <div class="seller-heading"><div><div class="eyebrow">SHOPKEEPER WORKSPACE</div><h2 id="sellerTitle">Today at Saathi Kirana</h2><p>Keep your shelf catalogue close to what’s actually in the shop.</p></div><span class="live-tag"><i></i> Shopkeeper view · sample account</span></div>
+      <div class="seller-grid">
+        <section class="panel inventory-panel" aria-labelledby="inventoryTitle">
+          <div class="panel-heading"><div><h3 id="inventoryTitle">Shelf catalogue</h3><p>Add products and adjust shelf stock</p></div><span class="mini-tag">STOCK</span></div>
+          <form class="product-form" id="productForm">
+            <label>Item name<input name="name" maxlength="50" placeholder="e.g. Turmeric powder" required></label>
+            <label>Pack / unit<input name="unit" maxlength="24" placeholder="e.g. 200 g" required></label>
+            <label>Category<select name="category" required><option value="Vegetables">Vegetables</option><option value="Dairy">Dairy</option><option value="Staples">Staples</option><option value="Snacks">Snacks</option></select></label>
+            <label>Price (₹)<input name="price" type="number" min="0.01" max="100000" step="0.01" placeholder="45" required></label>
+            <label>Quantity on shelf<input name="stock" type="number" min="0" max="9999" step="1" value="0" required></label>
+            <button class="primary-button form-submit" type="submit">Add to customer catalogue</button>
+          </form>
+          <div class="inventory-list" id="inventoryList" aria-live="polite"></div>
+        </section>
+
+        <div class="seller-side-column">
+          <section class="panel" aria-labelledby="queueTitle">
+            <div class="panel-heading"><div><h3 id="queueTitle">Pickup queue</h3><p>One bag · one chosen evening slot</p></div><span class="count-badge" id="queueCount">0</span></div>
+            <div class="queue-list" id="sellerOrders"></div>
+          </section>
+          <section class="panel settings-panel" aria-labelledby="settingsTitle">
+            <div class="panel-heading"><div><h3 id="settingsTitle">Pickup slots</h3><p>30-minute slots · shop local time</p></div></div>
+            <form class="settings-form" id="settingsForm">
+              <label>Evening starts<input name="evening_start" type="time" required></label>
+              <label>Evening ends<input name="evening_end" type="time" required></label>
+              <label>Orders per slot<input name="capacity" type="number" min="1" max="500" step="1" required></label>
+              <label>Cutoff (minutes)<input name="cutoff_minutes" type="number" min="0" max="360" step="1" required></label>
+              <button class="outline-button form-submit" type="submit">Save pickup hours</button>
+            </form>
+            <p class="fine-print">A change is blocked while a slot already has a booking.</p>
+          </section>
+          <button class="danger-link" id="resetDemo" type="button">Reset sample data</button>
+        </div>
+      </div>
+      <aside class="notice"><strong>Sample-account boundary</strong><span>Role access and order checks are enforced by the app server. Replace these test accounts with real sign-in before inviting customers or sellers.</span></aside>
+    </section>
+
+    <div class="notice global-notice" id="globalNotice" role="status" aria-live="polite" hidden></div>
+  </main>
+  <footer class="footer"><div><strong>Kirana Corner</strong><span>Prototype · no online payments · pay at the shop</span></div><span>Store times shown in the shop’s local time zone.</span></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

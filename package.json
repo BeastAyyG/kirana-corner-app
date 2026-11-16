@@ -1,0 +1,16 @@
+{
+  "name": "kirana-corner-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local sample-data prototype for customer grocery pickup and shopkeeper order fulfillment.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "check": "node --check src/db.js && node --check src/server.js && node --check public/app.js && npm test"
+  }
+}
