@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import {
   AppError, openDatabase, getUserById, createSession, getSessionUser, revokeSession,
-  isSellerMember, getPilotStoreId, listStores, getProducts, getSellerProducts, getPickupSlots,
+  isSellerMember, getPilotStoreId, listStores, getProducts, getProduct, getSellerProducts, getSellerStores, updateStore, getPickupSlots,
   getCurrentStoreDate, getShopperOrder, getShopperOrders, getOrderStoreId, getSellerOrders,
   getPickupSettings, updatePickupSettings, createOrder, cancelOrder, transitionSellerOrder,
+  getShopperProfile, updateShopperProfile, getShopperBasket, putShopperBasket,
+  getSavedProducts, saveShopperProduct, unsaveShopperProduct,
   createProduct, patchProduct, resetDemo
 } from './db.js';
 
@@ -117,12 +119,15 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
         if(method==='POST'&&path==='/api/v1/auth/logout'){
           revokeSession(db,cookieValue(request,SESSION_COOKIE));clearSessionCookie(response);sendJson(response,200,{ok:true});return;
         }
-        if(method==='GET'&&path==='/api/v1/stores'){sendJson(response,200,{stores:listStores(db)});return;}
+        if(method==='GET'&&path==='/api/v1/stores'){sendJson(response,200,{stores:listStores(db,{q:url.searchParams.get('q')||''})});return;}
         const productsMatch=path.match(/^\/api\/v1\/stores\/([^/]+)\/products$/);
         if(method==='GET'&&productsMatch){
           const storeId=decodePath(productsMatch[1]);
-          sendJson(response,200,{products:getProducts(db,storeId,{q:url.searchParams.get('q')||'',category:url.searchParams.get('category')||''})});return;
+          sendJson(response,200,{products:getProducts(db,storeId,{q:url.searchParams.get('q')||'',category:url.searchParams.get('category')||'',
+            inStock:url.searchParams.get('in_stock')||'',minPrice:url.searchParams.get('min_price')||'',maxPrice:url.searchParams.get('max_price')||'',sort:url.searchParams.get('sort')||''})});return;
         }
+        const productMatch=path.match(/^\/api\/v1\/stores\/([^/]+)\/products\/([^/]+)$/);
+        if(method==='GET'&&productMatch){sendJson(response,200,{product:getProduct(db,decodePath(productMatch[1]),decodePath(productMatch[2]))});return;}
         const slotsMatch=path.match(/^\/api\/v1\/stores\/([^/]+)\/pickup-slots$/);
         if(method==='GET'&&slotsMatch){
           const storeId=decodePath(slotsMatch[1]);const date=validateDate(url.searchParams.get('date'),getCurrentStoreDate(db,storeId));
@@ -132,6 +137,36 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
           const shopper=requireUser(db,request,'shopper');const body=await readJson(request);
           const order=createOrder(db,{shopperId:shopper.id,storeId:body.store_id,slotId:body.slot_id,items:body.items,idempotencyKey:request.headers['idempotency-key']});
           sendJson(response,201,{order});return;
+        }
+        if(method==='GET'&&path==='/api/v1/shopper/me'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{profile:getShopperProfile(db,shopper.id)});return;
+        }
+        if(method==='PATCH'&&path==='/api/v1/shopper/me'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{profile:updateShopperProfile(db,shopper.id,await readJson(request))});return;
+        }
+        if(method==='GET'&&path==='/api/v1/shopper/basket'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{basket:getShopperBasket(db,shopper.id)});return;
+        }
+        if(method==='PUT'&&path==='/api/v1/shopper/basket'){
+          const shopper=requireUser(db,request,'shopper'),body=await readJson(request);
+          sendJson(response,200,{basket:putShopperBasket(db,shopper.id,{storeId:body.store_id,items:body.items})});return;
+        }
+        if(method==='GET'&&path==='/api/v1/shopper/me/orders'){
+          const shopper=requireUser(db,request,'shopper');let orders=getShopperOrders(db,shopper.id);
+          const status=url.searchParams.get('status')||'';
+          if(status&&!['placed','packing','ready','collected','cancelled'].includes(status))throw new AppError(400,'INVALID_STATUS_FILTER','Order status filter is not valid.');
+          if(status)orders=orders.filter(order=>order.status===status);
+          sendJson(response,200,{orders});return;
+        }
+        if(method==='GET'&&path==='/api/v1/shopper/me/saved-products'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{products:getSavedProducts(db,shopper.id)});return;
+        }
+        const savedProduct=path.match(/^\/api\/v1\/shopper\/me\/saved-products\/([^/]+)$/);
+        if(savedProduct&&method==='PUT'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{products:saveShopperProduct(db,shopper.id,decodePath(savedProduct[1]))});return;
+        }
+        if(savedProduct&&method==='DELETE'){
+          const shopper=requireUser(db,request,'shopper');sendJson(response,200,{products:unsaveShopperProduct(db,shopper.id,decodePath(savedProduct[1]))});return;
         }
         if(method==='GET'&&path==='/api/v1/orders'){
           const shopper=requireUser(db,request,'shopper');sendJson(response,200,{orders:getShopperOrders(db,shopper.id)});return;
@@ -150,6 +185,14 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
           }
           const order=cancelOrder(db,id,{actorId:user.id,role:user.role,reason:body.reason||''});sendJson(response,200,{order});return;
         }
+        if(method==='GET'&&path==='/api/v1/seller/stores'){
+          const seller=requireUser(db,request,'seller');sendJson(response,200,{stores:getSellerStores(db,seller.id)});return;
+        }
+        const sellerStore=path.match(/^\/api\/v1\/seller\/stores\/([^/]+)$/);
+        if(sellerStore&&method==='PATCH'){
+          const seller=requireUser(db,request,'seller'),storeId=decodePath(sellerStore[1]);requireSellerStore(db,seller,storeId);
+          sendJson(response,200,{store:updateStore(db,storeId,await readJson(request))});return;
+        }
         const sellerProducts=path.match(/^\/api\/v1\/seller\/stores\/([^/]+)\/products$/);
         if(sellerProducts&&method==='GET'){
           const seller=requireUser(db,request,'seller'),storeId=decodePath(sellerProducts[1]);requireSellerStore(db,seller,storeId);
@@ -167,7 +210,7 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
         const sellerOrders=path.match(/^\/api\/v1\/seller\/stores\/([^/]+)\/orders$/);
         if(sellerOrders&&method==='GET'){
           const seller=requireUser(db,request,'seller'),storeId=decodePath(sellerOrders[1]);requireSellerStore(db,seller,storeId);
-          sendJson(response,200,{orders:getSellerOrders(db,storeId,url.searchParams.get('status')||'')});return;
+          sendJson(response,200,{orders:getSellerOrders(db,storeId,{status:url.searchParams.get('status')||'',date:url.searchParams.get('date')||'',q:url.searchParams.get('q')||''})});return;
         }
         const pickupSettings=path.match(/^\/api\/v1\/seller\/stores\/([^/]+)\/pickup-settings$/);
         if(pickupSettings&&method==='GET'){
@@ -214,6 +257,7 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  if(process.env.NODE_ENV==='production')throw new Error('Production deployment is disabled until real shopper authentication and seller onboarding are implemented.');
   const server=createAppServer(),host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||3000);
   server.listen(port,host,()=>console.log(`Kirana Corner listening at http://${host}:${port}`));
 }

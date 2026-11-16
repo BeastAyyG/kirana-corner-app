@@ -49,7 +49,7 @@
       <div class="store-band">
         <div class="store-badge" aria-hidden="true">▦</div>
         <div class="store-copy"><strong id="storeName">Saathi Kirana</strong><span id="storeCaption">Small-basket friendly · pickup from the front counter</span></div>
-        <label class="store-select-wrap" id="storeSelectWrap" hidden><span class="sr-only">Choose a shop</span><select id="storeSelect" aria-label="Choose a shop"></select></label>
+        <div class="store-picker" id="storeSelectWrap"><label>Find a neighbourhood shop<input id="storeSearch" type="search" placeholder="Search shops or neighbourhoods" autocomplete="off"></label><label>Choose a shop<select id="storeSelect" aria-label="Choose a shop"></select></label></div>
         <div class="pickup-today"><span class="clock" aria-hidden="true">◷</span><span id="slotZone">Evening pickup · local shop time</span></div>
       </div>
 
@@ -60,9 +60,12 @@
             <label class="search-wrap"><span class="sr-only">Search products</span><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search items" autocomplete="off"></label>
           </div>
           <div class="category-row" id="categoryRow" aria-label="Filter products"></div>
+          <div class="catalog-filters"><label><input id="inStockFilter" type="checkbox"> In stock</label><label>Min ₹ <input id="minPriceFilter" type="number" min="0" step="1" placeholder="0"></label><label>Max ₹ <input id="maxPriceFilter" type="number" min="0" step="1" placeholder="Any"></label><label>Sort <select id="sortFilter"><option value="">Recommended</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="name">Name</option></select></label></div>
           <div class="product-grid" id="productGrid" aria-live="polite"></div>
+          <section class="orders-section" aria-labelledby="savedTitle"><div class="section-head"><div><h2 id="savedTitle">Saved items</h2><p>Keep a short list of your regulars.</p></div></div><div class="saved-list" id="savedProducts"></div></section>
           <section class="orders-section" aria-labelledby="ordersTitle">
-            <div class="section-head"><div><h2 id="ordersTitle">Your pickup orders</h2><p>Order progress stays here if you refresh.</p></div></div>
+            <div class="section-head"><div><h2 id="ordersTitle">Your pickup orders</h2><p>Order progress and receipts stay here.</p></div><button class="outline-button" id="toggleProfile" type="button">My account</button></div>
+            <div class="profile-panel" id="profilePanel" hidden><form id="profileForm"><label>Shopper nickname<input name="display_name" maxlength="80" required></label><p>Use a nickname only. Contact details aren’t collected in this pilot.</p><button class="outline-button" type="submit">Save account</button></form></div>
             <div class="order-list" id="customerOrders"></div>
           </section>
         </section>
@@ -75,12 +78,12 @@
     </section>
 
     <section class="workspace" id="sellerView" hidden aria-label="Seller app">
-      <div class="seller-heading"><div><div class="eyebrow">SHOPKEEPER WORKSPACE</div><h2 id="sellerTitle">Today at Saathi Kirana</h2><p>Keep your shelf catalogue close to what’s actually in the shop.</p></div><span class="live-tag"><i></i> Shopkeeper view · sample account</span></div>
+      <div class="seller-heading"><div><div class="eyebrow">SHOPKEEPER WORKSPACE</div><h2 id="sellerTitle">Today at Saathi Kirana</h2><p>Keep your shelf catalogue close to what’s actually in the shop.</p></div><div class="seller-store-controls"><label>Manage shop<select id="sellerStoreSelect" aria-label="Choose a shop to manage"></select></label><label>Pickup point<input id="pickupLocationInput" maxlength="120" aria-label="Shop pickup point"></label><button class="small-button secondary" type="button" id="savePickupLocation">Save point</button><button class="small-button" type="button" id="toggleStoreOpen">Close shop</button></div><span class="live-tag"><i></i> Shopkeeper view · sample account</span></div>
       <div class="seller-grid">
         <section class="panel inventory-panel" aria-labelledby="inventoryTitle">
           <div class="panel-heading"><div><h3 id="inventoryTitle">Shelf catalogue</h3><p>Add products and adjust shelf stock</p></div><span class="mini-tag">STOCK</span></div>
           <form class="product-form" id="productForm">
-            <label>Item name<input name="name" maxlength="50" placeholder="e.g. Turmeric powder" required></label>
+            <label>Item name<input name="name" maxlength="50" placeholder="e.g. Turmeric powder" required></label><label class="wide-label">Short description<input name="description" maxlength="240" placeholder="Freshly stocked everyday staple"></label>
             <label>Pack / unit<input name="unit" maxlength="24" placeholder="e.g. 200 g" required></label>
             <label>Category<select name="category" required><option value="Vegetables">Vegetables</option><option value="Dairy">Dairy</option><option value="Staples">Staples</option><option value="Snacks">Snacks</option></select></label>
             <label>Price (₹)<input name="price" type="number" min="0.01" max="100000" step="0.01" placeholder="45" required></label>
@@ -93,11 +96,14 @@
         <div class="seller-side-column">
           <section class="panel" aria-labelledby="queueTitle">
             <div class="panel-heading"><div><h3 id="queueTitle">Pickup queue</h3><p>One bag · one chosen evening slot</p></div><span class="count-badge" id="queueCount">0</span></div>
+            <div class="queue-filters"><label>Search queue<input id="queueSearch" type="search" placeholder="Order, bag, or item"></label><label>Pickup date<input id="queueDate" type="date"></label><label>Status<select id="queueStatus"><option value="">All statuses</option><option value="placed">Waiting</option><option value="packing">Packing</option><option value="ready">Ready</option><option value="collected">Picked up</option><option value="cancelled">Cancelled</option></select></label><button class="outline-button" id="clearQueueFilters" type="button">Clear</button></div>
             <div class="queue-list" id="sellerOrders"></div>
           </section>
           <section class="panel settings-panel" aria-labelledby="settingsTitle">
             <div class="panel-heading"><div><h3 id="settingsTitle">Pickup slots</h3><p>30-minute slots · shop local time</p></div></div>
             <form class="settings-form" id="settingsForm">
+              <div class="wide-label"><span>Service days</span><div class="service-days"><label><input type="checkbox" name="service_days" value="1"> Mon</label><label><input type="checkbox" name="service_days" value="2"> Tue</label><label><input type="checkbox" name="service_days" value="3"> Wed</label><label><input type="checkbox" name="service_days" value="4"> Thu</label><label><input type="checkbox" name="service_days" value="5"> Fri</label><label><input type="checkbox" name="service_days" value="6"> Sat</label><label><input type="checkbox" name="service_days" value="0"> Sun</label></div></div>
+              <label class="wide-label">Closed dates (comma-separated, YYYY-MM-DD)<input name="closure_dates" placeholder="2026-12-25, 2026-12-26"></label>
               <label>Evening starts<input name="evening_start" type="time" required></label>
               <label>Evening ends<input name="evening_end" type="time" required></label>
               <label>Orders per slot<input name="capacity" type="number" min="1" max="500" step="1" required></label>
@@ -115,6 +121,7 @@
     <div class="notice global-notice" id="globalNotice" role="status" aria-live="polite" hidden></div>
   </main>
   <footer class="footer"><div><strong>Kirana Corner</strong><span>Prototype · no online payments · pay at the shop</span></div><span>Store times shown in the shop’s local time zone.</span></footer>
+  <dialog class="product-dialog" id="productDialog" aria-labelledby="dialogProductName"><form method="dialog"><button class="dialog-close" aria-label="Close details">×</button></form><div id="productDialogContent"></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -26,7 +26,8 @@ async function fixture({ production = false, extraStore = false } = {}) {
     db.close();
   }
   const previousNodeEnv = process.env.NODE_ENV;
-  if (production) process.env.NODE_ENV = 'production';
+  const previousSecret = process.env.KIRANA_PICKUP_CODE_SECRET;
+  if (production) { process.env.NODE_ENV = 'production'; process.env.KIRANA_PICKUP_CODE_SECRET = randomBytes(40).toString('base64url'); }
   let server = createAppServer({ dbPath });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -61,6 +62,8 @@ async function fixture({ production = false, extraStore = false } = {}) {
     await new Promise(resolve => server.close(resolve));
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
+    if (previousSecret === undefined) delete process.env.KIRANA_PICKUP_CODE_SECRET;
+    else process.env.KIRANA_PICKUP_CODE_SECRET = previousSecret;
     rmSync(directory, { recursive: true, force: true });
   };
   return { get base() { return base; }, request, login, store, tomorrow, slots, order, close, dbPath, otherSellerCookie, restart: async () => {
@@ -108,6 +111,60 @@ test('checkout is idempotent, records paise snapshots, and survives service rest
   const afterRestart = await app.request(`/api/v1/orders/${first.payload.order.id}`, { cookie: shopper.cookie });
   assert.equal(afterRestart.response.status, 200);
   assert.equal(afterRestart.payload.order.id, first.payload.order.id);
+});
+
+test('duplicate raw product entries cannot bypass the aggregate quantity cap', async t => {
+  const app=await fixture();t.after(app.close);
+  const shopper=await app.login('shopper');
+  const slot=(await app.slots())[0];
+  const result=await app.order(shopper.cookie,slot.id,{items:[{product_id:'tomato',quantity:60},{product_id:'tomato',quantity:40}]});
+  assert.equal(result.response.status,400);
+  assert.equal(result.payload.code,'INVALID_ORDER_ITEM');
+  const products=(await app.request('/api/v1/seller/stores/saathi-kirana/products',{cookie:(await app.login('seller')).cookie})).payload.products;
+  assert.equal(products.find(item=>item.id==='tomato').reserved,0);
+});
+
+test('production refuses to start with a missing or weak pickup-code secret', async t => {
+  const priorEnv=process.env.NODE_ENV,priorSecret=process.env.KIRANA_PICKUP_CODE_SECRET;
+  process.env.NODE_ENV='production';delete process.env.KIRANA_PICKUP_CODE_SECRET;
+  try { assert.throws(()=>openDatabase(':memory:'),/requires a unique KIRANA_PICKUP_CODE_SECRET/); }
+  finally {if(priorEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=priorEnv;if(priorSecret===undefined)delete process.env.KIRANA_PICKUP_CODE_SECRET;else process.env.KIRANA_PICKUP_CODE_SECRET=priorSecret;}
+});
+
+test('catalog filters, product details, shopper profile, basket and saved items are scoped and persistent', async t => {
+  const app=await fixture();t.after(app.close);
+  const products=(await app.request('/api/v1/stores/saathi-kirana/products?in_stock=true&sort=price_asc')).payload.products;
+  assert.ok(products.length>10);assert.ok(products.every(item=>item.available>0));assert.ok(products[0].price_minor<=products.at(-1).price_minor);
+  const details=await app.request('/api/v1/stores/saathi-kirana/products/tomato');
+  assert.equal(details.response.status,200);assert.ok(details.payload.product.description);
+  const shopper=await app.login('shopper');
+  const basket=await app.request('/api/v1/shopper/basket',{cookie:shopper.cookie,method:'PUT',body:{store_id:'saathi-kirana',items:[{product_id:'tomato',quantity:2}]}});
+  assert.equal(basket.response.status,200);assert.equal(basket.payload.basket.items[0].quantity,2);
+  assert.equal((await app.request('/api/v1/shopper/basket',{cookie:shopper.cookie})).payload.basket.items[0].price_minor,2800);
+  const saved=await app.request('/api/v1/shopper/me/saved-products/tomato',{cookie:shopper.cookie,method:'PUT'});
+  assert.equal(saved.payload.products.length,1);
+  assert.equal((await app.request('/api/v1/shopper/me/saved-products',{cookie:shopper.cookie})).payload.products[0].product_id,'tomato');
+  const profile=await app.request('/api/v1/shopper/me',{cookie:shopper.cookie,method:'PATCH',body:{display_name:'Ayy Sample'}});
+  assert.equal(profile.payload.profile.display_name,'Ayy Sample');
+  const contact=await app.request('/api/v1/shopper/me',{cookie:shopper.cookie,method:'PATCH',body:{email:'person@example.com'}});
+  assert.equal(contact.response.status,400);assert.equal(contact.payload.code,'CONTACT_DETAILS_DISABLED');
+  await app.restart();
+  assert.equal((await app.request('/api/v1/shopper/basket',{cookie:shopper.cookie})).payload.basket.items[0].quantity,2);
+  assert.equal((await app.request('/api/v1/shopper/me/saved-products',{cookie:shopper.cookie})).payload.products.length,1);
+});
+
+test('persistent baskets preserve a quoted price and flag a later catalog change', async t => {
+  const app=await fixture();t.after(app.close);
+  const shopper=await app.login('shopper');const seller=await app.login('seller');
+  const savedQuote=await app.request('/api/v1/shopper/basket',{cookie:shopper.cookie,method:'PUT',body:{store_id:'saathi-kirana',items:[{product_id:'tomato',quantity:2,expected_price_minor:2800}]}});
+  assert.equal(savedQuote.payload.basket.items[0].price_changed,false);
+  await app.request('/api/v1/seller/products/tomato',{cookie:seller.cookie,method:'PATCH',body:{price_minor:3300}});
+  const refreshed=await app.request('/api/v1/shopper/basket',{cookie:shopper.cookie});
+  assert.equal(refreshed.payload.basket.items[0].quoted_price_minor,2800);
+  assert.equal(refreshed.payload.basket.items[0].price_minor,3300);
+  assert.equal(refreshed.payload.basket.items[0].price_changed,true);
+  const product=(await app.request('/api/v1/seller/stores/saathi-kirana/products',{cookie:seller.cookie})).payload.products.find(item=>item.id==='tomato');
+  assert.equal(product.reserved,0);
 });
 
 test('checkout rejects a changed displayed price without reserving stock or creating an order', async t => {
@@ -207,6 +264,34 @@ test('capacity-one concurrent checkouts cannot oversell or overbook', async t =>
   const orders = (await app.request('/api/v1/seller/stores/saathi-kirana/orders', { cookie: seller.cookie })).payload.orders;
   assert.equal(orders.length, 1);
   assert.equal((await app.slots()).some(item => item.id === slot.id), false, 'full slot must not appear in bookable slots');
+});
+
+test('store discovery, filters, product details, and seller store/queue controls work', async t => {
+  const app=await fixture({extraStore:true});t.after(app.close);
+  const discovered=await app.request('/api/v1/stores?q=Other');
+  assert.equal(discovered.payload.stores.length,1);assert.equal(discovered.payload.stores[0].id,'other-shop');
+  const filter=await app.request('/api/v1/stores/saathi-kirana/products?min_price=50&max_price=80&sort=price_asc&in_stock=true');
+  assert.ok(filter.payload.products.length>0);assert.ok(filter.payload.products.every(p=>p.price_minor>=5000&&p.price_minor<=8000&&p.available>0));
+  const seller=await app.login('seller');
+  const sellerStores=await app.request('/api/v1/seller/stores',{cookie:seller.cookie});
+  assert.deepEqual(sellerStores.payload.stores.map(s=>s.id),['saathi-kirana']);
+  const closed=await app.request('/api/v1/seller/stores/saathi-kirana',{cookie:seller.cookie,method:'PATCH',body:{is_open:false,pickup_location:'Side door'}});
+  assert.equal(closed.response.status,200);assert.equal(closed.payload.store.is_open,false);
+  assert.equal((await app.request('/api/v1/stores')).payload.stores.find(s=>s.id==='saathi-kirana').is_open,false);
+  const reopened=await app.request('/api/v1/seller/stores/saathi-kirana',{cookie:seller.cookie,method:'PATCH',body:{is_open:true,pickup_location:'Main counter'}});
+  assert.equal(reopened.payload.store.pickup_location,'Main counter');
+  const date=await app.tomorrow();
+  const settings=await app.request('/api/v1/seller/stores/saathi-kirana/pickup-settings',{cookie:seller.cookie});
+  const update=await app.request('/api/v1/seller/stores/saathi-kirana/pickup-settings',{cookie:seller.cookie,method:'PUT',body:{...settings.payload.settings,closure_dates:[date],service_days:[0,1,2,3,4,5,6]}});
+  assert.equal(update.response.status,200);
+  assert.equal((await app.request(`/api/v1/stores/saathi-kirana/pickup-slots?date=${date}`)).payload.slots.length,0);
+  const clear=await app.request('/api/v1/seller/stores/saathi-kirana/pickup-settings',{cookie:seller.cookie,method:'PUT',body:{...update.payload.settings,closure_dates:[]}});
+  assert.equal(clear.response.status,200);
+  const shopper=await app.login('shopper');const slot=(await app.slots())[0];
+  const placed=await app.order(shopper.cookie,slot.id);
+  const query=await app.request(`/api/v1/seller/stores/saathi-kirana/orders?date=${date}&status=placed&q=${placed.payload.order.public_label}`,{cookie:seller.cookie});
+  assert.equal(query.payload.orders.length,1);
+  assert.equal(query.payload.orders[0].public_label,placed.payload.order.public_label);
 });
 
 test('sample sign-in is disabled when running in production mode', async t => {
