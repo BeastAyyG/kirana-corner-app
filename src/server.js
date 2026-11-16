@@ -12,6 +12,7 @@ import {
   getSavedProducts, saveShopperProduct, unsaveShopperProduct,
   createProduct, patchProduct, resetDemo
 } from './db.js';
+import { createV2Context, handleV2Request } from './v2/router.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PUBLIC = resolve(ROOT, 'public');
@@ -96,12 +97,19 @@ function staticFile(response,request,path) {
 }
 function decodePath(value) { try{return decodeURIComponent(value);}catch{throw new AppError(400,'INVALID_PATH','Path is not valid.');} }
 
-export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT,'data/kirana.sqlite')}={}) {
+export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT,'data/kirana.sqlite'),v2DbPath=process.env.KIRANA_V2_DB_PATH||resolve(ROOT,'data/kirana-delivery.sqlite')}={}) {
   const db=openDatabase(dbPath);
+  const v2=createV2Context({dbPath:v2DbPath});
   const server=createHttpServer(async(request,response)=>{
     try{
       const url=new URL(request.url||'/',`http://${request.headers.host||'localhost'}`);
       const method=request.method||'GET';const path=url.pathname;
+      if(path==='/healthz'){sendJson(response,200,{ok:true,service:'kirana-corner',at:new Date().toISOString()});return;}
+      if(path==='/readyz'){
+        db.prepare('SELECT 1').get();v2.db.prepare('SELECT 1').get();
+        sendJson(response,200,{ok:true,databases:['pickup','delivery']});return;
+      }
+      if(path.startsWith('/api/v2/')){await handleV2Request(v2,request,response,url);return;}
       if(['POST','PUT','PATCH','DELETE'].includes(method))requireSameOrigin(request);
       if(path.startsWith('/api/v1/')){
         if(method==='GET'&&path==='/api/v1/auth/session'){
@@ -253,11 +261,12 @@ export function createAppServer({dbPath=process.env.KIRANA_DB_PATH||resolve(ROOT
       staticFile(response,request,decoded);
     }catch(error){sendError(response,error);}
   });
-  server.on('close',()=>db.close());return server;
+  server.on('close',()=>{db.close();v2.close();});return server;
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  if(process.env.NODE_ENV==='production')throw new Error('Production deployment is disabled until real shopper authentication and seller onboarding are implemented.');
   const server=createAppServer(),host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||3000);
   server.listen(port,host,()=>console.log(`Kirana Corner listening at http://${host}:${port}`));
+  const shutdown=()=>{server.close(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref();};
+  process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);
 }

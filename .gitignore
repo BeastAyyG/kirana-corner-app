@@ -8,3 +8,4 @@ data/
 *.sqlite-wal
 coverage/
 .DS_Store
+backups/

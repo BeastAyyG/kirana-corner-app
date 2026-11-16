@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Syntax check + unit/integration tests
+        run: npm run check
+      - name: End-to-end smoke (boots server, full order lifecycle)
+        run: node scripts/smoke.mjs
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t kirana-corner:ci .
+      - name: Boot container and probe readiness
+        run: |
+          docker run -d --name kirana-ci -p 3000:3000 \
+            -e KIRANA_PICKUP_CODE_SECRET=ci-only-secret-not-for-production-0123456789 \
+            -e KIRANA_SESSION_SECRET=ci-only-secret-not-for-production-9876543210 \
+            -e KIRANA_ALLOW_CONSOLE_OTP=true \
+            kirana-corner:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/readyz; then exit 0; fi
+            sleep 1
+          done
+          docker logs kirana-ci
+          exit 1
