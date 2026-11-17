@@ -21,6 +21,8 @@ Rules:
 - **v1 pickup API** (`/api/v1/*`): unchanged, cookie sessions, powers the existing `public/` PWA. Do not break it.
 - **v2 delivery API** (`/api/v2/*`): the Blinkit/BigBasket-style platform — customer, store-picker, rider, admin roles. Bearer tokens via phone OTP. Full contract: **[docs/03-API-REFERENCE.md](docs/03-API-REFERENCE.md)**. Screen-by-screen integration map: **[docs/05-APP-INTEGRATION-GUIDE.md](docs/05-APP-INTEGRATION-GUIDE.md)**.
 - Research/parity notes (what Blinkit/BigBasket do and where each behaviour lives): [docs/01-VISION-AND-RESEARCH.md](docs/01-VISION-AND-RESEARCH.md).
+- **BigBasket design brief (start here for the visual rebuild):** [docs/07-BIGBASKET-DESIGN-BRIEF.md](docs/07-BIGBASKET-DESIGN-BRIEF.md) — pixel-level tokens, components, per-screen layouts, acceptance checklist, grounded in scraped official BigBasket screenshots.
+- **Shippable imagery pack:** `design-assets/products/*.webp` (24 packshots, ids match seeds), `design-assets/categories/*.webp` (4), `design-assets/banners/*.webp` (3, left 45% clear for text). Copy into `public/img/` per brief §4. `design-assets/reference/` is scraped copyrighted material — gitignored, study-only, never commit or ship.
 
 ## What to build (frontend scope)
 
