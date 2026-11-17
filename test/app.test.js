@@ -17,6 +17,22 @@ test('basket price-note helper is initialized before item rendering', () => {
   assert.ok(note>=0&&items>=0&&note<items,'priceNote must be initialized before rendering item lines');
 });
 
+test('seller pickup-code drafts survive queue redraws and keep keyboard focus', () => {
+  const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  assert.match(source,/pickupCodeDrafts:\s*new Map\(\)/,'pickup-code drafts should remain in page memory');
+  const cardStart=source.indexOf('function sellerOrderCard(');
+  const cardEnd=source.indexOf('function renderSellerOrders()',cardStart);
+  assert.ok(cardStart>=0&&cardEnd>cardStart,'seller order card renderer should exist');
+  const card=source.slice(cardStart,cardEnd);
+  assert.match(card,/state\.pickupCodeDrafts\.get\(order\.id\)/,'ready order cards should restore the matching draft');
+  assert.match(card,/value="\$\{pickupCode\}"/,'the saved draft should be rendered into the code field');
+  const renderStart=cardEnd;
+  const renderEnd=source.indexOf('function renderSettings()',renderStart);
+  const renderer=source.slice(renderStart,renderEnd);
+  assert.match(source,/state\.pickupCodeDrafts\.set\(form\.dataset\.complete,input\.value\)/,'typing should save a draft under its order id');
+  assert.match(renderer,/input\.focus\(\); input\.setSelectionRange\(selectionStart, selectionEnd\)/,'queue redraw should restore focus and selection');
+});
+
 import { createSession, openDatabase } from '../src/db.js';
 
 async function fixture({ production = false, extraStore = false } = {}) {

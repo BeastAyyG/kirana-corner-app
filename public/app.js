@@ -6,7 +6,7 @@
   const money = minor => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(minor || 0) / 100);
   const $ = id => document.getElementById(id);
   const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const state = { user: null, mode: location.pathname === '/seller' ? 'seller' : 'shopper', store: null, stores: [], sellerStores: [], selectedStoreId: '', demoAvailable: true, products: [], allProducts: [], slots: [], orders: [], savedProducts: [], profile: null, category: 'All', search: '', slotId: '', basket: {}, quotePrices: {}, settings: null, loading: false, poll: null, inStockOnly: false, minPrice: '', maxPrice: '', sort: '', queueSearch: '', queueDate: '', queueStatus: '' };
+  const state = { user: null, mode: location.pathname === '/seller' ? 'seller' : 'shopper', store: null, stores: [], sellerStores: [], selectedStoreId: '', demoAvailable: true, products: [], allProducts: [], slots: [], orders: [], pickupCodeDrafts: new Map(), savedProducts: [], profile: null, category: 'All', search: '', slotId: '', basket: {}, quotePrices: {}, settings: null, loading: false, poll: null, inStockOnly: false, minPrice: '', maxPrice: '', sort: '', queueSearch: '', queueDate: '', queueStatus: '' };
   let toastTimer;
   function showToast(message) {
     const node = $('toast'); node.textContent = message; node.classList.add('show');
@@ -172,15 +172,24 @@
     let actions = '';
     if (order.status === 'placed') actions = `<button class="small-button" type="button" data-start-packing="${html(order.id)}">Start packing</button><button class="small-button danger" type="button" data-seller-cancel="${html(order.id)}">Cancel order</button>`;
     if (order.status === 'packing') actions = `<button class="small-button" type="button" data-mark-ready="${html(order.id)}">Seal bag &amp; mark ready</button>`;
-    if (order.status === 'ready') actions = `<form class="pickup-form" data-complete="${html(order.id)}"><label class="pickup-code-label">Shopper pickup code<input name="pickup_code" autocomplete="one-time-code" minlength="8" maxlength="8" placeholder="Enter 8-character code" aria-label="Shopper pickup code" required></label><button class="small-button" type="submit">Verify &amp; hand over</button></form>`;
+    if (order.status === 'ready') { const pickupCode = html(state.pickupCodeDrafts.get(order.id) || ''); actions = `<form class="pickup-form" data-complete="${html(order.id)}"><label class="pickup-code-label">Shopper pickup code<input name="pickup_code" value="${pickupCode}" autocomplete="one-time-code" minlength="8" maxlength="8" placeholder="Enter 8-character code" aria-label="Shopper pickup code" required></label><button class="small-button" type="submit">Verify &amp; hand over</button></form>`; }
     if (order.status === 'collected') actions = '<button class="small-button secondary" type="button" disabled>Pickup complete</button>';
     if (order.status === 'cancelled') actions = '<button class="small-button secondary" type="button" disabled>Cancelled</button>';
     return `<article class="seller-order"><div class="seller-order-top"><div><strong>${html(order.public_label)} · ${slot}</strong><small>${html(order.bag_label)} · ${html(order.pickup_location)}</small></div><span class="status-chip ${html(order.status)}"><i></i>${html(statusText(order.status))}</span></div><div class="seller-order-body"><div class="detail-label">${order.items.reduce((sum,item)=>sum+item.quantity,0)} units · ${money(order.total_minor)} · pay at shop</div>${items}<div class="seller-actions">${actions}</div></div></article>`;
   }
   function renderSellerOrders() {
+    const activeInput = document.activeElement?.matches('input[name="pickup_code"]') ? document.activeElement : null;
+    const activeOrderId = activeInput?.closest('[data-complete]')?.dataset.complete;
+    const selectionStart = activeInput?.selectionStart ?? 0;
+    const selectionEnd = activeInput?.selectionEnd ?? selectionStart;
+    for (const order of state.orders) if (order.status !== 'ready') state.pickupCodeDrafts.delete(order.id);
     const activeCount = state.orders.filter(order => ['placed', 'packing', 'ready'].includes(order.status)).length;
     $('queueCount').textContent = String(activeCount);
     $('sellerOrders').innerHTML = state.orders.length ? state.orders.map(sellerOrderCard).join('') : '<div class="queue-empty"><strong>No pickup baskets yet</strong>Orders will appear here after a shopper checks out.</div>';
+    if (activeOrderId) {
+      const input = [...$('sellerOrders').querySelectorAll('input[name="pickup_code"]')].find(item => item.closest('[data-complete]')?.dataset.complete === activeOrderId);
+      if (input) { input.focus(); input.setSelectionRange(selectionStart, selectionEnd); }
+    }
   }
   function renderSettings() {
     const form = $('settingsForm'); if (!state.settings || form.dataset.loaded === 'yes') return;
@@ -244,7 +253,7 @@
       }
       renderAll();
     }catch(error){
-      if(error.status===401){state.user=null;renderAll();}
+      if(error.status===401){state.user=null;state.pickupCodeDrafts.clear();renderAll();}
       else if(!quiet)showNotice(`${error.message} Use Refresh to try again.`);
     }
   }
@@ -286,7 +295,7 @@
   }
   async function signOut() {
     try { await api('/auth/logout', { method: 'POST' }); } catch {}
-    state.user = null; state.orders = []; state.profile=null; state.savedProducts=[]; stopPolling();
+    state.user = null; state.orders = []; state.pickupCodeDrafts.clear(); state.profile=null; state.savedProducts=[]; stopPolling();
     state.mode='shopper';history.replaceState({}, '', '/customer');await refreshData();renderAll();
   }
   function startPolling() { stopPolling(); state.poll = setInterval(() => refreshData({ quiet: true }), 5000); }
@@ -472,6 +481,7 @@
   $('maxPriceFilter').addEventListener('input',event=>{state.maxPrice=event.target.value;clearTimeout(catalogTimer);catalogTimer=setTimeout(()=>refreshData({quiet:true}),250);});
   $('sortFilter').addEventListener('change',event=>{state.sort=event.target.value;void refreshData({quiet:true});});
   $('storeSearch').addEventListener('input',event=>{clearTimeout(catalogTimer);catalogTimer=setTimeout(async()=>{state.selectedStoreId='';await refreshData({quiet:true});},220);});
+  $('sellerOrders').addEventListener('input',event=>{const input=event.target.closest('input[name="pickup_code"]');const form=input?.closest('[data-complete]');if(form)state.pickupCodeDrafts.set(form.dataset.complete,input.value);});
   $('queueSearch').addEventListener('input',event=>{state.queueSearch=event.target.value;clearTimeout(catalogTimer);catalogTimer=setTimeout(()=>refreshData({quiet:true}),200);});
   $('queueDate').addEventListener('change',event=>{state.queueDate=event.target.value;void refreshData({quiet:true});});
   $('queueStatus').addEventListener('change',event=>{state.queueStatus=event.target.value;void refreshData({quiet:true});});
