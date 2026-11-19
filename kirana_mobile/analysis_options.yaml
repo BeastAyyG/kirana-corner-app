@@ -1,0 +1,18 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+    # This Flutter build marks package:flutter/material.dart itself deprecated
+    # in favour of material_ui; the import still compiles and builds fine.
+    deprecated_member_use: ignore
+  exclude:
+    - "**/*.g.dart"
+    - build/**
+    - android/**
+
+linter:
+  rules:
+    prefer_const_constructors: false
+    use_key_in_widget_constructors: false
+    avoid_print: false
