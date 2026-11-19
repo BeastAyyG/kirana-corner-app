@@ -2,6 +2,8 @@
 
 A complete, deployable quick-commerce backend modelled on **Blinkit** (instant delivery) and **Big Basket** (scheduled slots), plus the original grocery-**pickup** app. Zero runtime dependencies: Node.js 24 built-ins only (`node:sqlite`, `node:http`, `node:crypto`, `node:test`).
 
+It ships with two clients: a BigBasket-style **web PWA** (`public/`) and a **native Flutter Android app** (`kirana_mobile/`) — one app covering **customer, seller, rider and admin** behind a single phone-OTP login. See **[kirana_mobile/README.md](kirana_mobile/README.md)** for the mobile build/run guide.
+
 Two APIs live side by side in one server:
 
 | API | What it is | Auth | Clients |
@@ -19,6 +21,20 @@ Requires Node.js ≥ 24. No `npm install` — there are no dependencies.
 
 - v1 pickup PWA: open <http://127.0.0.1:3000>, pick a demo account.
 - v2 delivery API: sign in with `POST /api/v2/auth/otp/request {"phone":"9000000021"}` — dev returns `dev_code` — then `POST /api/v2/auth/otp/verify`. Demo phones: customer `9000000021`, picker `9000000002`, rider `9000000011`, admin `9000000001`.
+
+## Native mobile app (Flutter)
+
+`kirana_mobile/` is one Android app for all four roles. The account you sign in with decides the workspace (customer / seller / rider / admin) — no role picker, no separate apps. It is a native client of `/api/v2` and needs **no backend changes**.
+
+```sh
+npm run dev                 # 1. backend on :3000 (repo root, seeds demo data + console OTP)
+cd kirana_mobile
+flutter pub get             # 2. fetch app packages
+flutter run                 # 3. run on an emulator/device (defaults to http://10.0.2.2:3000)
+flutter build apk --release # 4. installable APK → build/app/outputs/flutter-apk/app-release.apk
+```
+
+Sign in with a demo phone (OTP auto-fills in dev): customer `9000000021`, seller `9000000002`, rider `9000000011`, admin `9000000001`. On a physical device, set the backend's LAN IP in-app (Account → Server URL). Full prerequisites, architecture, signing and troubleshooting: **[kirana_mobile/README.md](kirana_mobile/README.md)**.
 
 ## What the delivery platform does
 
@@ -61,6 +77,7 @@ The image is `node:24-alpine`, non-root, with a `/data` volume and a `/readyz` h
 | [04 — Infrastructure](docs/04-INFRASTRUCTURE.md) | env vars, Docker, TLS proxies, systemd, providers, backups |
 | [05 — App Integration Guide](docs/05-APP-INTEGRATION-GUIDE.md) | screen→API maps for all four clients |
 | [06 — Operations Runbook](docs/06-OPERATIONS-RUNBOOK.md) | day-2 ops, incident playbooks, restore, secret rotation |
+| [Mobile app guide](kirana_mobile/README.md) | Flutter prerequisites, run/build APK, role login, architecture, troubleshooting |
 | [FRONTEND-HANDOFF.md](FRONTEND-HANDOFF.md) | two-agent coordination contract (backend ↔ Z code) |
 
 ## Honest boundaries
@@ -76,10 +93,12 @@ The image is `node:24-alpine`, non-root, with a `/data` volume and a `/readyz` h
 ```
 src/            v1 pickup backend + server entry
 src/v2/         delivery platform (15 modules)
-public/         v1 pickup PWA (frontend lane — Z code)
+public/         web PWA (frontend lane — Z code): js/ v1 pickup SPA, apps/ v2 role apps, img/ generated pack
+kirana_mobile/  native Flutter Android app — all four roles (see kirana_mobile/README.md)
 test/           node:test suites (v1 + v2)
 scripts/        smoke lifecycle, seed report, backup
 docs/           the six documents above
+design-assets/  generated imagery pack (reference/ is gitignored, study-only)
 data/           SQLite databases (gitignored)
 ```
 
