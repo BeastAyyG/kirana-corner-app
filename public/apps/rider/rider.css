@@ -1,0 +1,161 @@
+/* Kirana Corner Rider — app-local additions on top of base.css + views.css + v2.css.
+   CSP-safe: classes + SVG presentation attributes only, no inline styles. */
+
+/* ---------- rider top bar (dark-green chrome) ---------- */
+.app-header.rider-top { background: var(--bb-cart); color: #fff; border-bottom: 0; }
+.rider-top .rt-row { display: flex; align-items: center; gap: 11px; padding: 10px 14px; }
+.rider-top .rt-avatar {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--bb-green); color: #fff;
+  display: grid; place-items: center; font-size: 16px; font-weight: 800; flex: none;
+  border: 2px solid rgba(255, 255, 255, .35);
+}
+.rider-top .rt-id { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.rider-top .rt-id strong { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rider-top .rt-sub { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #cfe3ab; }
+.rider-top .rt-sub .pill { font-size: 9px; padding: 2px 7px; }
+.rider-top .rt-sub .pill svg { width: 11px; height: 11px; }
+.rider-top .rt-presence { display: inline-flex; align-items: center; gap: 4px; }
+.rider-top .rt-presence i { width: 6px; height: 6px; border-radius: 50%; background: #8a8f85; flex: none; }
+.rider-top .rt-presence.on { color: var(--bb-lime); }
+.rider-top .rt-presence.on i { background: var(--bb-lime); animation: presence-blink 1.8s ease-in-out infinite; }
+@keyframes presence-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.rider-top .rt-earn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border-radius: 999px; background: rgba(255, 255, 255, .14); color: #fff;
+  font-size: 12.5px; font-weight: 800; flex: none; border: 1px solid rgba(255, 255, 255, .22);
+}
+.rider-top .rt-earn svg { width: 15px; height: 15px; color: var(--bb-lime); }
+.rider-top .rt-earn:active { background: rgba(255, 255, 255, .24); }
+.rider-top .switch { background: rgba(255, 255, 255, .28); }
+.rider-top .switch[aria-checked="true"] { background: var(--bb-green); }
+.rider-top .rt-toggle { display: grid; justify-items: center; gap: 2px; flex: none; }
+.rider-top .rt-toggle small { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; color: #cfe3ab; text-transform: uppercase; }
+
+/* ---------- home: presence + stats ---------- */
+.presence-strip { display: flex; align-items: center; gap: 7px; border-radius: 10px; padding: 9px 12px; font-size: 11.5px; font-weight: 700; }
+.presence-strip svg { width: 15px; height: 15px; flex: none; }
+.presence-strip.online { background: var(--bb-save-tint); color: var(--bb-save-ink); }
+.presence-strip.offline { background: var(--bb-bg); color: var(--bb-sub); }
+.rider-stat-row { margin-top: 12px; }
+.rider-stat-row .stat-tile strong { font-variant-numeric: tabular-nums; }
+.rider-stat-row .stat-tile.accent-cash strong { color: #9a6a10; }
+
+/* ---------- offer cards ---------- */
+.offer-card { animation: offer-in .32s var(--bb-ease); margin-top: 12px; }
+@keyframes offer-in { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.offer-card .of-head .of-id { display: block; font-size: 10.5px; font-weight: 700; color: #cfe3ab; margin-top: 2px; letter-spacing: .04em; }
+.offer-card .of-pay { display: grid; justify-items: end; line-height: 1.1; }
+.offer-card .of-pay small { font-size: 9px; font-weight: 800; letter-spacing: .1em; color: var(--bb-lime); text-transform: uppercase; }
+.offer-card.is-expired { opacity: .55; }
+.offer-card.is-expired .of-head { background: var(--bb-sub); }
+.offer-route > .os-line { width: 2px; height: 16px; background: var(--bb-line); margin: 1px 0 3px 5px; }
+.offer-countdown .oc-copy { min-width: 0; }
+
+/* countdown ring (SVG attributes driven, CSP-safe) */
+.oc-ring { display: block; }
+.oc-ring .oc-track { stroke: #eceae6; }
+.oc-ring .oc-arc { stroke: var(--bb-green); transition: stroke-dashoffset .26s linear, stroke .3s ease; }
+.oc-ring .oc-num { font-size: 13px; font-weight: 800; fill: var(--bb-ink); font-variant-numeric: tabular-nums; }
+.oc-ring.is-urgent .oc-arc { stroke: var(--bb-red); }
+.oc-ring.is-urgent .oc-num { fill: var(--bb-red); }
+
+/* ---------- job cards (active + past) ---------- */
+.job-card[role="button"] { cursor: pointer; }
+.job-card[role="button"]:focus-visible { outline: 2px solid var(--bb-green); outline-offset: 2px; }
+.job-card[role="button"]:active { background: var(--bb-green-tint); }
+.job-card .jc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.job-card .jc-label { font-size: 14px; font-weight: 800; }
+.job-card .jc-route { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--bb-sub); min-width: 0; }
+.job-card .jc-route svg { width: 14px; height: 14px; flex: none; color: var(--bb-green-dark); }
+.job-card .jc-route span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-card .jc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.job-card .jc-pay { font-size: 14px; font-weight: 800; color: var(--bb-green-deep); font-variant-numeric: tabular-nums; }
+.job-card .jc-meta { display: flex; align-items: center; gap: 6px; }
+.job-card .jc-meta .chev svg { width: 16px; height: 16px; }
+.past-pay { font-size: 13px; font-weight: 800; color: var(--bb-save-ink); flex: none; font-variant-numeric: tabular-nums; }
+
+/* waiting-for-offers pulse */
+.is-waiting .empty-art { animation: wait-pulse 2.2s ease-in-out infinite; }
+@keyframes wait-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(132, 194, 37, .35); }
+  50% { box-shadow: 0 0 0 16px rgba(132, 194, 37, 0); }
+}
+
+/* ---------- job detail: stop cards ---------- */
+.stop-card { background: #fff; border: 1px solid var(--bb-line); border-radius: var(--bb-radius); padding: 13px 14px; display: grid; gap: 10px; margin-top: 10px; }
+.stop-card .sc-head { display: flex; align-items: flex-start; gap: 11px; }
+.stop-card .sc-ico { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+.stop-card .sc-ico svg { width: 19px; height: 19px; }
+.stop-card .sc-ico.store { background: var(--bb-cart); color: #fff; }
+.stop-card .sc-ico.home { background: var(--bb-green-tint); color: var(--bb-green-dark); }
+.stop-card .sc-main { flex: 1; min-width: 0; }
+.stop-card .sc-main strong { font-size: 13.5px; font-weight: 800; display: block; }
+.stop-card .sc-main span { font-size: 11.5px; color: var(--bb-sub); line-height: 1.4; display: block; margin-top: 2px; }
+.stop-card .sc-call { width: 42px; height: 42px; border-radius: 50%; background: var(--bb-green-tint); color: var(--bb-green-dark); display: grid; place-items: center; flex: none; }
+.stop-card .sc-call svg { width: 20px; height: 20px; }
+.stop-card .sc-step { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--bb-faint); }
+
+/* manual pickup code entry */
+.manual-code { display: grid; gap: 9px; margin-top: 10px; }
+.manual-code .mc-toggle { font-size: 12px; font-weight: 800; color: var(--bb-green-dark); display: inline-flex; align-items: center; gap: 5px; justify-content: center; padding: 6px; }
+.manual-code .mc-toggle svg { width: 14px; height: 14px; }
+
+/* OTP shake on wrong code */
+.otp-entry.shake { animation: otp-shake .4s ease; }
+@keyframes otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); } 40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); } 80% { transform: translateX(5px); }
+}
+.otp-hint { text-align: center; font-size: 11px; color: var(--bb-sub); margin-top: 8px; }
+
+/* delivered success card */
+.done-card {
+  border-radius: var(--bb-radius-lg); background: linear-gradient(135deg, #0c3b1e, #345d1c 60%, #4c8c1c);
+  color: #fff; padding: 26px 18px; display: grid; justify-items: center; gap: 8px; text-align: center;
+  box-shadow: var(--bb-shadow-lg); margin-top: 12px; animation: offer-in .32s var(--bb-ease);
+}
+.done-card .dn-check {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--bb-green); color: #fff;
+  display: grid; place-items: center; animation: add-pop .3s var(--bb-ease);
+}
+.done-card .dn-check svg { width: 34px; height: 34px; }
+.done-card h2 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.done-card .dn-label { font-size: 12px; color: #cfe3ab; font-weight: 700; }
+.done-card .dn-pay { font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.done-card .dn-pay small { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .12em; color: var(--bb-lime); text-transform: uppercase; }
+.done-card .dn-cash { font-size: 11.5px; font-weight: 700; background: rgba(255, 255, 255, .14); border-radius: 999px; padding: 6px 12px; }
+
+/* ---------- earnings ---------- */
+.earn-card { background: #fff; border: 1px solid var(--bb-line); border-radius: var(--bb-radius-lg); padding: 15px 16px; display: grid; gap: 10px; margin-top: 12px; }
+.earn-card .ec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.earn-card .ec-head h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--bb-sub); display: flex; align-items: center; gap: 7px; }
+.earn-card .ec-head h2 svg { width: 15px; height: 15px; color: var(--bb-green-dark); }
+.earn-card .ec-total { font-size: 30px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.earn-card .ec-total small { font-size: 10.5px; font-weight: 700; color: var(--bb-faint); letter-spacing: .02em; display: block; }
+.earn-card .ec-rows { display: grid; gap: 0; border-top: 1px dashed var(--bb-line); padding-top: 6px; }
+.earn-card .ec-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; padding: 5px 0; }
+.earn-card .ec-row span { color: var(--bb-sub); display: inline-flex; align-items: center; gap: 6px; }
+.earn-card .ec-row span svg { width: 13px; height: 13px; }
+.earn-card .ec-row strong { font-weight: 800; font-variant-numeric: tabular-nums; }
+.earn-card .ec-row.tips strong { color: var(--bb-save-ink); }
+.earn-card .ec-row.cash strong { color: #9a6a10; }
+.earn-card.is-hero { background: linear-gradient(135deg, #0c3b1e, #345d1c 70%, #4c8c1c); border: 0; color: #fff; box-shadow: var(--bb-shadow-lg); }
+.earn-card.is-hero .ec-head h2 { color: #cfe3ab; }
+.earn-card.is-hero .ec-head h2 svg { color: var(--bb-lime); }
+.earn-card.is-hero .ec-total small { color: #cfe3ab; }
+.earn-card.is-hero .ec-rows { border-top-color: rgba(255, 255, 255, .25); }
+.earn-card.is-hero .ec-row span { color: #cfe3ab; }
+.earn-card.is-hero .ec-row.tips strong { color: var(--bb-lime); }
+.earn-card.is-hero .ec-row.cash strong { color: #ffd98a; }
+
+/* ---------- account / auth extras ---------- */
+.rider-badge {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--bb-cart); color: var(--bb-lime);
+  font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  border-radius: 999px; padding: 6px 13px;
+}
+.rider-badge svg { width: 13px; height: 13px; }
+.acct-head .rd-pills { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.app-version { text-align: center; font-size: 10.5px; color: var(--bb-faint); padding: 20px 0 6px; }
+.role-switch .current { border-color: var(--bb-green); background: var(--bb-green-tint); color: var(--bb-green-deep); }

@@ -15,10 +15,10 @@ export async function renderWelcome(outlet) {
         <p>Order groceries from your neighbourhood kirana and collect them in an evening pickup slot.</p>
       </div>
       <div class="welcome-tiles">
-        <div class="welcome-tile"><span class="t-emoji">🧺</span><strong>Reserve a slot</strong><span>One labeled bag, packed for you</span></div>
-        <div class="welcome-tile"><span class="t-emoji">🏪</span><strong>Local shelf stock</strong><span>Real quantities from the shop</span></div>
-        <div class="welcome-tile"><span class="t-emoji">🤝</span><strong>Pay at the store</strong><span>No online payment needed</span></div>
-        <div class="welcome-tile"><span class="t-emoji">🛍️</span><strong>Two apps in one</strong><span>Shopper + shopkeeper views</span></div>
+        <div class="welcome-tile"><span class="t-ico">${icon('clock')}</span><strong>Reserve a slot</strong><span>One labeled bag, packed for you</span></div>
+        <div class="welcome-tile"><span class="t-ico">${icon('store')}</span><strong>Local shelf stock</strong><span>Real quantities from the shop</span></div>
+        <div class="welcome-tile"><span class="t-ico">${icon('shield')}</span><strong>Pay at the store</strong><span>No online payment needed</span></div>
+        <div class="welcome-tile"><span class="t-ico">${icon('grid')}</span><strong>Two apps in one</strong><span>Shopper + shopkeeper views</span></div>
       </div>
       <div class="welcome-body">
         ${state.session.demoAvailable ? `

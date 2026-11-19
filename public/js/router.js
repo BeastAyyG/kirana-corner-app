@@ -55,15 +55,19 @@ async function handle() {
   const values = hash.match(match.regex);
   match.keys.forEach((key, i) => { params[key] = decodeURIComponent(values[i + 1]); });
   current = { cleanup: null };
+  outlet.classList.remove('page-enter');
+  void outlet.offsetWidth;
+  outlet.classList.add('page-enter');
   const view = typeof match.view === 'function' ? { render: match.view } : match.view;
   try {
     const maybe = view.render(outlet, { ...params, query });
-    if (maybe && typeof maybe.then === 'function') await maybe;
+    if (typeof maybe === 'function') current.cleanup = maybe;
+    else if (maybe && typeof maybe.then === 'function') await maybe;
   } catch (error) {
     console.error('view render failed', error);
     outlet.innerHTML = '<div class="empty"><div class="empty-art">⚠️</div><h3>Could not load this screen</h3><p>Try again in a moment.</p></div>';
   }
-  if (current) current.cleanup = view.cleanup || null;
+  if (current && view.cleanup) current.cleanup = view.cleanup;
 }
 
 export function startRouter(outlet) {

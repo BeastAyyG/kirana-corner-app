@@ -2,6 +2,7 @@
 // skeleton loaders and shared card components used by every view.
 import { money, statusText } from './format.js';
 import { artFor } from './art.js';
+import { state } from './state.js';
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => (
@@ -41,6 +42,21 @@ const PATHS = {
   phone: '<path d="M7 3.5h10a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M10 17.5h4"/>',
   install: '<path d="M12 3.5v10M8.5 10 12 13.5 15.5 10"/><path d="M5 15.5v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
   wallet: '<rect x="4" y="6.5" width="16" height="12" rx="2.5"/><path d="M4 10.5h16M16.5 14.5h.4"/>',
+  mic: '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  list: '<path d="M8.5 6h11M8.5 12h11M8.5 18h11"/><path d="M4 6h.4M4 12h.4M4 18h.4"/>',
+  bolt: '<path d="M13 2.5 4.5 13.5H11L9.5 21.5 19 10h-6.5L13 2.5Z"/>',
+  percent: '<path d="M18 5 6 19"/><circle cx="7.5" cy="7.5" r="2.3"/><circle cx="16.5" cy="16.5" r="2.3"/>',
+  tag: '<path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8L21 12l-8.5 8.5L3.5 12.5Z"/><circle cx="8.5" cy="8.5" r="1.4"/>',
+  star: '<path d="m12 3.5 2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9L12 3.5Z"/>',
+  bike: '<circle cx="6" cy="17" r="3.2"/><circle cx="18" cy="17" r="3.2"/><path d="M6 17 9.5 9h5L18 17M9.5 9 8 5.5H5.5M14.5 9 13 5.5h2.5"/>',
+  navigation: '<path d="M12 3.5 19 20.5l-7-4-7 4L12 3.5Z"/>',
+  chat: '<path d="M4 5.5h16v11H9l-5 4V5.5Z"/>',
+  share: '<circle cx="6" cy="12" r="2.4"/><circle cx="17.5" cy="5.5" r="2.4"/><circle cx="17.5" cy="18.5" r="2.4"/><path d="m8.2 10.8 7-4M8.2 13.2l7 4"/>',
+  arrowRight: '<path d="M4 12h15M13.5 6l6 6-6 6"/>',
+  leaf: '<path d="M5 19C5 9 12 4 20 4c0 9-5 15-13 15h-2Z"/><path d="M5 19c2-5 5-8 9-10"/>',
+  shield: '<path d="M12 3.5 5 6v6c0 4.5 3 7.5 7 8.5 4-1 7-4 7-8.5V6l-7-2.5Z"/><path d="m9 11.5 2.2 2.2L15.5 9"/>',
+  truck: '<path d="M3 6.5h11v10H3zM14 10h4l3 3v3.5h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
+  gift: '<rect x="4" y="9" width="16" height="4"/><path d="M5.5 13v7h13v-7M12 9v11M12 9c-2 0-4.5-1-4.5-3S10 3.5 12 9Zm0 0c2 0 4.5-1 4.5-3S14 3.5 12 9Z"/>',
 };
 export function icon(name, cls = '') {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="${cls}">${PATHS[name] || ''}</svg>`;
@@ -57,7 +73,8 @@ export function toast(message, kind = 'default', ms = 2600) {
   }
   const node = document.createElement('div');
   node.className = `toast ${kind}`;
-  node.textContent = message;
+  const lead = kind === 'success' ? icon('check') : kind === 'error' ? icon('alert') : '';
+  node.innerHTML = `${lead}<span>${esc(message)}</span>`;
   host.appendChild(node);
   requestAnimationFrame(() => node.classList.add('show'));
   setTimeout(() => {
@@ -176,10 +193,14 @@ export function formSheet({ title, submitLabel = 'Save', fields, note = '' }) {
 }
 
 /* ---------- shared components ---------- */
+
 export function skeletonCards(count = 4) {
   return `<div class="plp-grid">${Array.from({ length: count }, () => `
-    <div class="p-card"><div class="skel" data-sk="art"></div>
-      <div class="skel" data-sk="line"></div><div class="skel" data-sk="line"></div>
+    <div class="p-card skel-card">
+      <div class="skel skel-art"></div>
+      <div class="skel skel-price"></div>
+      <div class="skel skel-line"></div>
+      <div class="skel skel-line short"></div>
     </div>`).join('')}</div>`;
 }
 
@@ -187,47 +208,91 @@ export function statusChip(status) {
   return `<span class="status-chip status-${esc(status)}"><i></i>${esc(statusText(status))}</span>`;
 }
 
-export function emptyState({ emoji = '🧺', title, body, actionHtml = '' } = {}) {
-  return `<div class="empty"><div class="empty-art">${emoji}</div>
+export function emptyState({ emoji = '🧺', image = '', title, body, actionHtml = '' } = {}) {
+  const art = image ? `<img src="${esc(image)}" alt="" loading="lazy">` : emoji;
+  return `<div class="empty"><div class="empty-art">${art}</div>
     <h3>${esc(title)}</h3><p>${esc(body)}</p>${actionHtml}</div>`;
 }
 
-export function stepperHtml(product, qty, compact = false) {
-  return `<div class="stepper" data-stepper="${esc(product.id)}">
+export function stepperHtml(product, qty, variant = '') {
+  const cls = variant ? `stepper ${variant}` : 'stepper';
+  return `<div class="${cls}" data-stepper="${esc(product.id)}">
     <button type="button" data-qty-minus="${esc(product.id)}" aria-label="Remove one ${esc(product.name)}" ${qty <= 1 ? 'disabled' : ''}>−</button>
     <output>${qty}</output>
     <button type="button" data-qty-plus="${esc(product.id)}" aria-label="Add one ${esc(product.name)}" ${qty >= product.available ? 'disabled' : ''}>+</button>
-  </div>${compact ? '' : ''}`;
+  </div>`;
 }
 
-export function addControlHtml(product, qty) {
-  if (!qty) {
-    return `<button class="add-btn" data-qty-plus="${esc(product.id)}" ${product.available < 1 ? 'disabled' : ''}>${product.available < 1 ? 'SOLD OUT' : 'ADD'}</button>`;
+/** variant: 'corner' (cards) | 'full' (PDP) | 'tint' (basket rows) */
+export function addControlHtml(product, qty, { variant = 'corner' } = {}) {
+  const out = product.available < 1;
+  if (variant === 'full') {
+    if (out) return '<button class="add-full" disabled>SOLD OUT</button>';
+    return qty ? stepperHtml(product, qty, 'full')
+      : `<button class="add-full" data-qty-plus="${esc(product.id)}">ADD</button>`;
   }
-  return stepperHtml(product, qty);
+  if (variant === 'tint') return stepperHtml(product, Math.max(1, qty), 'tint');
+  if (out) return '';
+  return qty ? stepperHtml(product, qty)
+    : `<button class="add-corner" data-qty-plus="${esc(product.id)}" aria-label="Add ${esc(product.name)}">${icon('plus')}</button>`;
 }
 
-export function productCardHtml(product, { qty = 0, saved = false, rail = false } = {}) {
+export function addControlWrap(product, qty, variant = 'corner') {
+  return `<div class="p-add" data-add-control="${esc(product.id)}" data-variant="${variant}">${addControlHtml(product, qty, { variant })}</div>`;
+}
+
+/** Re-render every add/stepper control for a product in place (no view re-render). */
+export function syncAddControls(productId) {
+  const product = state.products.find(item => item.id === productId)
+    || state.seller.products.find(item => item.id === productId);
+  if (!product) return;
+  const qty = Number(state.basket[productId] || 0);
+  document.querySelectorAll(`[data-add-control="${CSS.escape(productId)}"]`).forEach(node => {
+    const variant = node.dataset.variant || 'corner';
+    node.innerHTML = addControlHtml(product, qty, { variant });
+    node.firstElementChild?.classList.add('pop');
+  });
+}
+
+export function productCardHtml(product, { qty = 0, rail = false, eta = '' } = {}) {
   const out = product.available < 1;
   const low = product.available > 0 && product.available <= 3;
+  const mrp = Number(product.mrp_minor || 0);
+  const disc = Number(product.discount_percent || 0);
+  const showMrp = mrp > product.price_minor;
   return `<article class="p-card ${rail ? 'rail-card' : ''}" data-product-card="${esc(product.id)}">
-    <button type="button" class="p-art" data-open-product="${esc(product.id)}" aria-label="View ${esc(product.name)}">
-      <img src="${product.image_url || artFor(product)}" alt="" loading="lazy">
-      ${low ? `<span class="pill pill-amber low-chip">${product.available} left</span>` : ''}
-      ${out ? '<span class="out-chip">Out of stock</span>' : ''}
-    </button>
-    <button type="button" class="p-save ${saved ? 'on' : ''}" data-toggle-save="${esc(product.id)}" aria-label="${saved ? 'Remove from' : 'Save to'} saved items">${icon('heart')}</button>
-    <div>
-      <button type="button" class="p-name" data-open-product="${esc(product.id)}">${esc(product.name)}</button>
-      <div class="p-unit">${esc(product.unit)}</div>
+    <div class="p-artwrap">
+      <button type="button" class="p-art" data-open-product="${esc(product.id)}" aria-label="View ${esc(product.name)}">
+        <img src="${esc(artFor(product))}" data-art-id="${esc(product.id)}" data-art-cat="${esc(product.category || '')}" alt="" loading="lazy" decoding="async" width="512" height="512" ${out ? 'class="is-out"' : ''}>
+        ${showMrp && disc > 0 ? `<span class="off-flag">${disc}% OFF</span>` : ''}
+        ${out ? '<span class="out-chip">Out of stock</span>' : ''}
+      </button>
+      ${out ? '' : addControlWrap(product, qty, 'corner')}
     </div>
-    <div class="p-foot">
-      <div class="price"><strong>${money(product.price_minor)}</strong></div>
-      ${out ? '<span class="tiny muted">Notify shop</span>' : addControlHtml(product, qty)}
-    </div>
+    <div class="p-price price"><strong>${money(product.price_minor)}</strong>${showMrp ? `<span class="mrp">${money(mrp)}</span>` : ''}</div>
+    <button type="button" class="p-name" data-open-product="${esc(product.id)}">${esc(product.name)}</button>
+    <div class="p-unit">${esc(product.unit)}</div>
+    ${low ? `<div class="p-low">Only ${product.available} left</div>` : ''}
+    ${eta ? `<div class="p-eta">${icon('bolt')} ${esc(eta)}</div>` : ''}
   </article>`;
 }
 
 export function spinner(label = 'Loading…') {
   return `<div class="empty"><h3>${esc(label)}</h3></div>`;
+}
+
+/** Circular ETA / progress gauge. SVG presentation attributes only (CSP-safe).
+ *  progress 0..1; centerTop/centerSub are short labels rendered as SVG text. */
+export function etaGauge({ progress = 0, centerTop = '', centerSub = '', size = 116, color = 'var(--bb-green)' } = {}) {
+  const r = 50;
+  const circ = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(1, progress));
+  const offset = circ * (1 - clamped);
+  return `<svg class="gauge" viewBox="0 0 120 120" width="${size}" height="${size}" role="img" aria-label="${esc(centerTop)} ${esc(centerSub)}">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="#eceae6" stroke-width="9"/>
+    <circle class="gauge-arc" cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="58" text-anchor="middle" class="gauge-top">${esc(centerTop)}</text>
+    <text x="60" y="75" text-anchor="middle" class="gauge-sub">${esc(centerSub)}</text>
+  </svg>`;
 }

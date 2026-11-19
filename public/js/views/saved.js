@@ -1,6 +1,6 @@
 // Saved items list ("save for later").
 import { state } from '../state.js';
-import { esc, icon, emptyState, addControlHtml } from '../ui.js';
+import { esc, icon, emptyState, addControlWrap } from '../ui.js';
 import { navigate, onView } from '../router.js';
 import { money } from '../format.js';
 import { artFor } from '../art.js';
@@ -11,7 +11,7 @@ export function renderSaved(outlet) {
       outlet.innerHTML = `
         <div class="subbar"><h1>Saved items</h1></div>
         <div class="page">
-          ${emptyState({ emoji: '♡', title: 'Sign in to save items', body: 'Keep your regulars one tap away by saving them here.', actionHtml: '<button class="btn btn-primary" data-go-signin>Sign in</button>' })}
+          ${emptyState({ emoji: '🤍', title: 'Sign in to save items', body: 'Keep your regulars one tap away by saving them here.', actionHtml: '<button class="btn btn-primary" data-go-signin>Sign in</button>' })}
         </div>`;
       outlet.querySelector('[data-go-signin]')?.addEventListener('click', () => navigate('#/welcome'));
       return;
@@ -26,13 +26,13 @@ export function renderSaved(outlet) {
       <div class="page">
         ${items.length ? items.map(item => `
           <div class="row-card">
-            <img class="row-art" src="${item.image_url || artFor(item)}" alt="">
+            <img class="row-art" src="${artFor(item)}" alt="" data-art-id="${esc(item.product_id || item.id)}" data-art-cat="${esc(item.category || '')}">
             <div class="row-main">
               <div class="row-title">${esc(item.name)}</div>
               <div class="row-sub">${esc(item.unit)} · ${money(item.price_minor)}${item.available < 1 ? ' · out of stock' : ''}</div>
             </div>
             ${item.available > 0
-              ? addControlHtml(item, Number(state.basket[item.id] || 0))
+              ? addControlWrap(item, Number(state.basket[item.id] || 0), 'corner')
               : `<button class="btn btn-ghost" data-remove-save="${esc(item.product_id)}">Remove</button>`}
           </div>`).join('')
         : emptyState({ emoji: '🤍', title: 'No saved items yet', body: 'Tap the heart on any item to keep your regulars handy.', actionHtml: '<button class="btn btn-primary" data-go-shop>Browse shelf</button>' })}
@@ -46,6 +46,5 @@ export function renderSaved(outlet) {
     });
   };
   onView('saved', draw);
-  onView('basket', draw);
   draw();
 }

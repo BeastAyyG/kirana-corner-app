@@ -1,8 +1,21 @@
-// Shopper orders list with Active / History segments.
+// Shopper orders list with Active / History segments and packshot stacks.
 import { state } from '../state.js';
 import { esc, icon, emptyState, statusChip } from '../ui.js';
 import { navigate, onView } from '../router.js';
 import { money, slotWhen } from '../format.js';
+import { artFor } from '../art.js';
+
+function thumbsHtml(order) {
+  const shown = order.items.slice(0, 4);
+  const extra = order.items.length - shown.length;
+  return `<div class="oc-thumbs">
+    ${shown.map(item => {
+      const product = state.products.find(p => p.id === item.product_id) || { id: item.product_id };
+      return `<img src="${artFor(product)}" alt="" loading="lazy" data-art-id="${esc(item.product_id)}">`;
+    }).join('')}
+    ${extra > 0 ? `<span class="oc-more">+${extra} more</span>` : ''}
+  </div>`;
+}
 
 export function renderOrders(outlet) {
   let tab = 'active';
@@ -36,7 +49,7 @@ export function renderOrders(outlet) {
       </div>
       <div class="page">
         ${list.length ? list.map(order => `
-          <button class="order-card block-btn" data-open-order="${esc(order.id)}">
+          <button class="order-card" data-open-order="${esc(order.id)}">
             <div class="oc-top">
               <div>
                 <div class="oc-label">${esc(order.public_label)}</div>
@@ -44,10 +57,11 @@ export function renderOrders(outlet) {
               </div>
               ${statusChip(order.status)}
             </div>
+            ${thumbsHtml(order)}
             <div class="oc-items">${order.items.map(item => `${esc(item.name)} × ${item.quantity}`).join(' · ')}</div>
             <div class="oc-foot">
               <span class="oc-total">${money(order.total_minor)}</span>
-              <span class="tiny muted">${order.status === 'placed' ? 'Tap to cancel or view code' : 'View details'} ${icon('chevronRight')}</span>
+              <span class="oc-reorder">${order.status === 'placed' ? 'View code' : 'View details'} ${icon('chevronRight')}</span>
             </div>
           </button>`).join('')
         : emptyState({

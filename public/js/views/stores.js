@@ -21,7 +21,7 @@ export async function renderStores(outlet, { query }) {
           : stores.length ? stores.map(store => `
             <div class="store-card">
               <div class="sc-top">
-                <span class="sc-badge">🏪</span>
+                <span class="sc-badge">${icon('store')}</span>
                 <div>
                   <div class="sc-name">${esc(store.name)}</div>
                   <div class="sc-sub">${esc(store.neighborhood)} · ${esc(store.address)}</div>
@@ -29,8 +29,8 @@ export async function renderStores(outlet, { query }) {
                 ${store.is_open ? '<span class="pill pill-green">Open</span>' : '<span class="pill pill-red">Closed</span>'}
               </div>
               <div class="sc-meta">
-                <span class="pill pill-gray">📍 ${esc(store.pickup_location)}</span>
-                <span class="pill pill-gray">Evening pickup</span>
+                <span class="pill pill-gray">${icon('pin')} ${esc(store.pickup_location)}</span>
+                <span class="pill pill-gray">${icon('clock')} Evening pickup</span>
               </div>
               <button class="btn ${store.id === state.store?.id ? 'btn-outline' : 'btn-primary'} block" data-pick-store="${esc(store.id)}">
                 ${store.id === state.store?.id ? 'Currently selected' : 'Shop here'}

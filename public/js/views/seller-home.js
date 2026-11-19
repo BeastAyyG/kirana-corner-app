@@ -57,7 +57,7 @@ export function renderSellerHome(outlet) {
           <div class="stat-tile accent-ready"><strong>${ready}</strong><span>Ready</span></div>
           <div class="stat-tile"><strong>${collectedToday.length}</strong><span>Done</span></div>
         </div>
-        ${activeCount ? `<div class="notice notice-warn">${icon('alert')}<span><strong>${activeCount} order${activeCount === 1 ? '' : 's'} need action.</strong> Open the queue to pack and hand over bags.</span></div>` : `<div class="notice notice-info">${icon('check')}<span>Queue is clear — no orders waiting on you.</span></div>`}
+        ${activeCount ? `<div class="notice notice-warn">${icon('alert')}<span><strong>${activeCount} order${activeCount === 1 ? ' needs' : 's need'} action.</strong> Open the queue to pack and hand over bags.</span></div>` : `<div class="notice notice-info">${icon('check')}<span>Queue is clear — no orders waiting on you.</span></div>`}
         <div class="section-title"><h2>Quick actions</h2></div>
         <div class="acct-rows">
           <button class="acct-row" data-go="#/seller/orders">

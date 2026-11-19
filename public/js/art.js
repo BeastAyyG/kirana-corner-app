@@ -1,6 +1,6 @@
-// Product/category artwork as inline SVG data URIs (CSP allows img-src data:).
-// The backend exposes image_url; when empty we render a colorful emoji tile
-// similar to how grocery apps illustrate catalogues without photos.
+// Product/category artwork. Local studio packshots (public/img) win for the
+// seeded catalogue; seller-provided https art is honoured when present; the
+// emoji SVG tile remains only as a last-resort fallback (CSP allows data:).
 
 const PRODUCT_EMOJI = {
   tomato: '🍅', onion: '🧅', banana: '🍌', potato: '🥔', chillies: '🌶️',
@@ -20,10 +20,13 @@ const CATEGORY_BG = {
   default: ['#f0f7e8', '#e2edd2'],
 };
 
+const LOCAL_PRODUCTS = new Set(Object.keys(PRODUCT_EMOJI));
+const CATEGORY_SLUG = { Vegetables: 'vegetables', Dairy: 'dairy', Staples: 'staples', Snacks: 'snacks' };
+
 const cache = new Map();
 
-export function artFor(item) {
-  const key = item ? `${item.id || ''}|${item.category || ''}|${item.image_url || ''}` : 'empty';
+function emojiTile(item) {
+  const key = item ? `${item.id || ''}|${item.category || ''}` : 'empty';
   if (cache.has(key)) return cache.get(key);
   const emoji = PRODUCT_EMOJI[item?.id] || CATEGORY_EMOJI[item?.category] || '🛒';
   const [from, to] = CATEGORY_BG[item?.category] || CATEGORY_BG.default;
@@ -39,10 +42,38 @@ export function artFor(item) {
   return uri;
 }
 
+export function artFor(item) {
+  if (item?.image_url) return item.image_url;
+  if (item?.id && LOCAL_PRODUCTS.has(item.id)) return `/img/products/${item.id}.webp`;
+  return emojiTile(item);
+}
+
+export function artForCategory(key) {
+  const slug = CATEGORY_SLUG[key];
+  return slug ? `/img/categories/${slug}.webp` : emojiTile({ category: key });
+}
+
+/** CSP-safe error fallback (delegated capture listener in main.js):
+ *  external art → local packshot → emoji tile. Never a broken image. */
+export function handleImgError(img) {
+  const stage = Number(img.dataset.fbk || 0);
+  const id = img.dataset.artId || '';
+  const category = img.dataset.artCat || '';
+  if (stage === 0 && id && LOCAL_PRODUCTS.has(id) && !img.getAttribute('src')?.startsWith('/img/products/')) {
+    img.dataset.fbk = '1';
+    img.src = `/img/products/${id}.webp`;
+    return;
+  }
+  if (stage < 2) {
+    img.dataset.fbk = '2';
+    img.src = emojiTile({ id, category });
+  }
+}
+
 export const CATEGORY_META = [
-  { key: 'All', emoji: '🛒', tint: 'cat-all', label: 'Everything' },
-  { key: 'Vegetables', emoji: '🥬', tint: 'cat-veg', label: 'Vegetables' },
-  { key: 'Dairy', emoji: '🥛', tint: 'cat-dairy', label: 'Dairy' },
-  { key: 'Staples', emoji: '🌾', tint: 'cat-staple', label: 'Staples' },
-  { key: 'Snacks', emoji: '🍪', tint: 'cat-snack', label: 'Snacks' },
+  { key: 'All', slug: '', tint: 'cat-all', label: 'All' },
+  { key: 'Vegetables', slug: 'vegetables', tint: 'cat-veg', label: 'Vegetables' },
+  { key: 'Dairy', slug: 'dairy', tint: 'cat-dairy', label: 'Dairy' },
+  { key: 'Staples', slug: 'staples', tint: 'cat-staple', label: 'Staples' },
+  { key: 'Snacks', slug: 'snacks', tint: 'cat-snack', label: 'Snacks' },
 ];
