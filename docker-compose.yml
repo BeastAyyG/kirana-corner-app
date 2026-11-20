@@ -1,0 +1,24 @@
+# Kirana Corner — single-container deployment.
+# 1. cp .env.example .env   2. set unique KIRANA_PICKUP_CODE_SECRET + KIRANA_SESSION_SECRET
+# 3. docker compose up -d --build
+services:
+  kirana:
+    build: .
+    image: kirana-corner:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      KIRANA_DB_PATH: /data/kirana.sqlite
+      KIRANA_V2_DB_PATH: /data/kirana-delivery.sqlite
+    volumes:
+      - kirana-data:/data
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+volumes:
+  kirana-data:

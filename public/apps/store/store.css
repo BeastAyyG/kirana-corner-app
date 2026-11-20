@@ -1,0 +1,103 @@
+/* Kirana Corner · Store (picker) — app-local additions ONLY.
+   Everything else reuses base.css / views.css / _shared/v2.css.
+   CSP-safe: classes only, no inline styles. Dynamic progress widths use
+   the .pw-* bucket classes below (5% steps) so the bar still transitions. */
+
+/* ---------- seller header ---------- */
+.seller-id { display: grid; line-height: 1.1; min-width: 0; }
+.seller-id strong { font-size: 15px; font-weight: 800; letter-spacing: -.02em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seller-id small { font-size: 9.5px; font-weight: 700; letter-spacing: .08em; color: #cfe3ab; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.head-pills { display: flex; align-items: center; gap: 6px; flex: none; }
+.app-header.seller .header-row1 { padding: 10px 12px; }
+.app-header.seller .logo-mark { background: rgba(255, 255, 255, .14); }
+.store-switch-btn { display: inline-flex; align-items: center; gap: 4px; color: #fff; }
+.store-switch-btn svg { width: 16px; height: 16px; }
+
+/* ---------- queue ---------- */
+.queue-toolbar { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.queue-toolbar .search-pill { flex: 1; min-width: 0; }
+.queue-tabs { margin: 2px 0 6px; }
+.queue-tabs .chip { flex: none; }
+.queue-note { font-size: 11px; color: var(--bb-sub); margin: 2px 2px 8px; }
+.seller-order-card[role="button"] { cursor: pointer; }
+.seller-order-card[role="button"]:focus-visible { outline: 2px solid var(--bb-green); outline-offset: 2px; }
+.seller-order-card.is-new { animation: card-in .25s var(--bb-ease); }
+@keyframes card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.so-items .si.more { color: var(--bb-sub); font-weight: 700; }
+.so-slot { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.so-slot svg { width: 12px; height: 12px; flex: none; }
+
+/* ---------- order / packing ---------- */
+.order-code { margin-top: 12px; }
+.sum-top { display: flex; align-items: center; gap: 12px; }
+.sum-top .sum-main { flex: 1; min-width: 0; }
+.sum-top .sum-main strong { font-size: 15px; font-weight: 800; display: block; }
+.sum-top .sum-main span { font-size: 11.5px; color: var(--bb-sub); }
+.sum-addr { font-size: 12px; color: var(--bb-sub); line-height: 1.45; }
+.pick-list.is-active .pick-row { cursor: pointer; }
+.pick-row .pk-name small { font-size: 10.5px; color: var(--bb-sub); font-weight: 600; margin-left: 5px; }
+.pk-pick { padding: 8px 16px; font-size: 12px; border-radius: 9px; }
+.pk-done { font-size: 11px; font-weight: 800; color: var(--bb-green-deep); }
+.pk-done.short { color: #9a6a10; }
+.pk-refund { font-size: 10px; font-weight: 700; color: var(--bb-save-ink); }
+.pick-row .stock-stepper { height: 32px; }
+.pick-row .stock-stepper button { width: 32px; height: 30px; }
+
+/* progress width buckets (CSP-safe stand-in for inline width) */
+.pp-fill.pw-0 { width: 0%; } .pp-fill.pw-5 { width: 5%; } .pp-fill.pw-10 { width: 10%; }
+.pp-fill.pw-15 { width: 15%; } .pp-fill.pw-20 { width: 20%; } .pp-fill.pw-25 { width: 25%; }
+.pp-fill.pw-30 { width: 30%; } .pp-fill.pw-35 { width: 35%; } .pp-fill.pw-40 { width: 40%; }
+.pp-fill.pw-45 { width: 45%; } .pp-fill.pw-50 { width: 50%; } .pp-fill.pw-55 { width: 55%; }
+.pp-fill.pw-60 { width: 60%; } .pp-fill.pw-65 { width: 65%; } .pp-fill.pw-70 { width: 70%; }
+.pp-fill.pw-75 { width: 75%; } .pp-fill.pw-80 { width: 80%; } .pp-fill.pw-85 { width: 85%; }
+.pp-fill.pw-90 { width: 90%; } .pp-fill.pw-95 { width: 95%; } .pp-fill.pw-100 { width: 100%; }
+
+/* sticky pack action bar (tab bar is hidden on the order route) */
+.pack-cta {
+  position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30;
+  margin-top: 14px; padding: 10px 12px; background: #fff; border: 1px solid var(--bb-line);
+  border-radius: 14px; box-shadow: var(--bb-shadow-lg); display: grid; gap: 8px;
+}
+.pack-cta .btn { padding: 13px 16px; font-size: 14px; }
+.pack-cta .cta-note { font-size: 10.5px; color: var(--bb-sub); text-align: center; }
+
+/* ---------- inventory ---------- */
+.inv-toolbar { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; }
+.inv-toolbar .search-pill { flex: 1; min-width: 0; }
+.inv-toolbar .chip { flex: none; }
+.inv-count { font-size: 11px; color: var(--bb-sub); margin: 0 2px 8px; }
+.inv-price { display: flex; align-items: baseline; gap: 6px; margin-top: 3px; }
+.inv-price strong { font-size: 12.5px; font-weight: 800; }
+.inv-price .mrp { font-size: 10.5px; color: var(--bb-faint); text-decoration: line-through; }
+.inv-price .off { font-size: 10px; font-weight: 800; color: var(--bb-green-dark); }
+.iv-sub { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.iv-buttons { display: flex; gap: 6px; }
+.iv-side .stepper-pop { animation: add-pop .12s var(--bb-ease); }
+
+/* ---------- metrics ---------- */
+.admin-stats { margin-bottom: 14px; }
+.admin-stat .as-value.fit { font-size: 20px; }
+.as-delta.warn { color: #9a6a10; }
+.as-delta.bad { color: var(--bb-red); }
+.as-delta.link { color: var(--bb-green-dark); cursor: pointer; }
+.metrics-break { margin-top: 4px; }
+
+/* ---------- settings ---------- */
+.settings-stack { display: grid; gap: 12px; }
+.settings-card .kv-list { border: 0; padding: 0; }
+.settings-card .form-row { gap: 10px; }
+.settings-note { font-size: 10.5px; color: var(--bb-faint); line-height: 1.45; }
+.toggle-row .switch { cursor: pointer; }
+.signout-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 4px 0; }
+.signout-row .a-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--bb-red-tint); color: var(--bb-red); display: grid; place-items: center; flex: none; }
+.signout-row .a-icon svg { width: 18px; height: 18px; }
+.signout-row strong { font-size: 13.5px; font-weight: 800; color: var(--bb-red); display: block; }
+.signout-row span { font-size: 10.5px; color: var(--bb-sub); }
+
+/* ---------- auth ---------- */
+.role-switch a[aria-current="page"] { border-color: var(--bb-green); color: var(--bb-green-deep); background: var(--bb-green-tint); }
+
+/* ---------- store switcher sheet ---------- */
+.store-sheet { display: grid; gap: 10px; }
+.store-sheet .addr-card .ad-main strong { font-size: 13.5px; font-weight: 800; display: block; }
+.store-sheet .addr-card .ad-main span { font-size: 11px; color: var(--bb-sub); }

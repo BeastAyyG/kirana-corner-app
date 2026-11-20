@@ -11,6 +11,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
-    "check": "node --check src/db.js && node --check src/server.js && node --check public/app.js && npm test"
+    "check": "node --check src/db.js && node --check src/server.js && node --check public/app.js && npm test",
+    "smoke": "node scripts/smoke.mjs",
+    "seed": "node scripts/seed.mjs",
+    "backup": "node scripts/backup.mjs"
   }
 }

@@ -1,12 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createAppServer } from '../src/server.js';
 
-test('basket price-note helper is initialized before item rendering', () => {
+test('basket price-note is computed before item rendering', () => {
+  const modular=new URL('../public/js/views/cart.js',import.meta.url);
+  if(existsSync(modular)){
+    const source=readFileSync(modular,'utf8');
+    const start=source.indexOf('export async function renderCart(');
+    assert.ok(start>=0,'cart renderer should exist');
+    const note=source.indexOf('const priceChanged =',start);
+    const items=source.indexOf('lines.map(',start);
+    assert.ok(note>=0&&items>=0&&note<items,'price-change note must be computed before rendering item lines');
+    return;
+  }
   const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   const start=source.indexOf('function renderBasket()');
   const end=source.indexOf('function renderSlots()',start);
@@ -18,19 +28,28 @@ test('basket price-note helper is initialized before item rendering', () => {
 });
 
 test('seller pickup-code drafts survive queue redraws and keep keyboard focus', () => {
-  const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  assert.match(source,/pickupCodeDrafts:\s*new Map\(\)/,'pickup-code drafts should remain in page memory');
-  const cardStart=source.indexOf('function sellerOrderCard(');
-  const cardEnd=source.indexOf('function renderSellerOrders()',cardStart);
-  assert.ok(cardStart>=0&&cardEnd>cardStart,'seller order card renderer should exist');
-  const card=source.slice(cardStart,cardEnd);
-  assert.match(card,/state\.pickupCodeDrafts\.get\(order\.id\)/,'ready order cards should restore the matching draft');
-  assert.match(card,/value="\$\{pickupCode\}"/,'the saved draft should be rendered into the code field');
-  const renderStart=cardEnd;
-  const renderEnd=source.indexOf('function renderSettings()',renderStart);
-  const renderer=source.slice(renderStart,renderEnd);
-  assert.match(source,/state\.pickupCodeDrafts\.set\(form\.dataset\.complete,input\.value\)/,'typing should save a draft under its order id');
-  assert.match(renderer,/input\.focus\(\); input\.setSelectionRange\(selectionStart, selectionEnd\)/,'queue redraw should restore focus and selection');
+  const modular = new URL('../public/js/views/seller-orders.js', import.meta.url);
+  if (existsSync(modular)) {
+    const view = readFileSync(modular, 'utf8');
+    const stateSrc = readFileSync(new URL('../public/js/state.js', import.meta.url), 'utf8');
+    assert.match(stateSrc, /pickupCodeDrafts:\s*new Map\(\)/, 'pickup-code drafts should remain in page memory');
+    assert.match(view, /state\.seller\.pickupCodeDrafts\.get\(order\.id\)/, 'ready order cards should restore the matching draft');
+    assert.match(view, /value="\$\{draft\}"/, 'the saved draft should be rendered into the code field');
+    assert.match(view, /state\.seller\.pickupCodeDrafts\.set\(input\.dataset\.codeInput, input\.value\)/, 'typing should save a draft under its order id');
+    assert.match(view, /input\.focus\(\); input\.setSelectionRange\(selectionStart, selectionEnd\)/, 'queue redraw should restore focus and selection');
+    return;
+  }
+  const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(source, /pickupCodeDrafts:\s*new Map\(\)/, 'pickup-code drafts should remain in page memory');
+  const cardStart = source.indexOf('function sellerOrderCard(');
+  const cardEnd = source.indexOf('function renderSellerOrders()', cardStart);
+  assert.ok(cardStart >= 0 && cardEnd > cardStart, 'seller order card renderer should exist');
+  const card = source.slice(cardStart, cardEnd);
+  assert.match(card, /state\.pickupCodeDrafts\.get\(order\.id\)/, 'ready order cards should restore the matching draft');
+  assert.match(card, /value="\$\{pickupCode\}"/, 'the saved draft should be rendered into the code field');
+  const renderer = source.slice(cardEnd, source.indexOf('function renderSettings()', cardEnd));
+  assert.match(source, /state\.pickupCodeDrafts\.set\(form\.dataset\.complete,input\.value\)/, 'typing should save a draft under its order id');
+  assert.match(renderer, /input\.focus\(\); input\.setSelectionRange\(selectionStart, selectionEnd\)/, 'queue redraw should restore focus and selection');
 });
 
 import { createSession, openDatabase } from '../src/db.js';
@@ -55,8 +74,16 @@ async function fixture({ production = false, extraStore = false } = {}) {
   }
   const previousNodeEnv = process.env.NODE_ENV;
   const previousSecret = process.env.KIRANA_PICKUP_CODE_SECRET;
-  if (production) { process.env.NODE_ENV = 'production'; process.env.KIRANA_PICKUP_CODE_SECRET = randomBytes(40).toString('base64url'); }
-  let server = createAppServer({ dbPath });
+  const previousSessionSecret = process.env.KIRANA_SESSION_SECRET;
+  const previousConsoleOtp = process.env.KIRANA_ALLOW_CONSOLE_OTP;
+  if (production) {
+    process.env.NODE_ENV = 'production';
+    process.env.KIRANA_PICKUP_CODE_SECRET = randomBytes(40).toString('base64url');
+    process.env.KIRANA_SESSION_SECRET = randomBytes(40).toString('base64url');
+    process.env.KIRANA_ALLOW_CONSOLE_OTP = 'true';
+  }
+  const v2DbPath = join(directory, 'delivery.sqlite');
+  let server = createAppServer({ dbPath, v2DbPath });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
@@ -92,11 +119,15 @@ async function fixture({ production = false, extraStore = false } = {}) {
     else process.env.NODE_ENV = previousNodeEnv;
     if (previousSecret === undefined) delete process.env.KIRANA_PICKUP_CODE_SECRET;
     else process.env.KIRANA_PICKUP_CODE_SECRET = previousSecret;
+    if (previousSessionSecret === undefined) delete process.env.KIRANA_SESSION_SECRET;
+    else process.env.KIRANA_SESSION_SECRET = previousSessionSecret;
+    if (previousConsoleOtp === undefined) delete process.env.KIRANA_ALLOW_CONSOLE_OTP;
+    else process.env.KIRANA_ALLOW_CONSOLE_OTP = previousConsoleOtp;
     rmSync(directory, { recursive: true, force: true });
   };
   return { get base() { return base; }, request, login, store, tomorrow, slots, order, close, dbPath, otherSellerCookie, restart: async () => {
     await new Promise(resolve => server.close(resolve));
-    server = createAppServer({ dbPath });
+    server = createAppServer({ dbPath, v2DbPath });
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
     base = `http://127.0.0.1:${server.address().port}`;
     return server;
