@@ -77,6 +77,7 @@ export async function signOut() {
   state.seller.orders = []; state.seller.ordersLoaded = false;
   state.seller.settings = null; state.seller.settingsLoaded = false;
   state.seller.seenOrderIds = new Set();
+  state.seller.pickupCodeDrafts = new Map();
   loadBasketLocal();
   bus.emit('session');
   bus.emit('orders');
@@ -372,6 +373,7 @@ export async function selectSellerStore(storeId) {
   state.seller.orders = []; state.seller.ordersLoaded = false;
   state.seller.settings = null; state.seller.settingsLoaded = false;
   state.seller.seenOrderIds = new Set();
+  state.seller.pickupCodeDrafts = new Map();
   savePrefs();
   bus.emit('seller');
   await Promise.all([refreshSellerProducts(), refreshQueue(), refreshSettings()]);

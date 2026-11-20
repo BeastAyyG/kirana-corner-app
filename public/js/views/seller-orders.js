@@ -34,6 +34,13 @@ export function renderSellerOrders(outlet) {
     const orders = state.seller.orders;
     const activeCount = orders.filter(order => ['placed', 'packing', 'ready'].includes(order.status)).length;
 
+    // Preserve any in-progress pickup code + caret across the full redraw.
+    const activeInput = document.activeElement?.matches('[data-code-input]') ? document.activeElement : null;
+    const activeOrderId = activeInput?.dataset.codeInput;
+    const selectionStart = activeInput?.selectionStart ?? 0;
+    const selectionEnd = activeInput?.selectionEnd ?? selectionStart;
+    for (const order of orders) if (order.status !== 'ready') state.seller.pickupCodeDrafts.delete(order.id);
+
     outlet.innerHTML = `
       <div class="subbar">
         <h1>Pickup queue</h1>
@@ -84,6 +91,13 @@ export function renderSellerOrders(outlet) {
     date?.addEventListener('change', () => setQueueFilters({ date: date.value || '' }));
     outlet.querySelector('[data-clear-date]')?.addEventListener('click', () => setQueueFilters({ date: '' }));
     bindOrderActions();
+    outlet.querySelectorAll('[data-code-input]').forEach(input => {
+      input.addEventListener('input', () => state.seller.pickupCodeDrafts.set(input.dataset.codeInput, input.value));
+    });
+    if (activeOrderId) {
+      const input = outlet.querySelector(`[data-code-input="${activeOrderId}"]`);
+      if (input) { input.focus(); input.setSelectionRange(selectionStart, selectionEnd); }
+    }
   };
 
   function actionHtml(order) {
@@ -99,8 +113,9 @@ export function renderSellerOrders(outlet) {
       </div>`;
     }
     if (order.status === 'ready') {
+      const draft = esc(state.seller.pickupCodeDrafts.get(order.id) || '');
       return `<div class="code-input">
-        <input data-code-input="${esc(order.id)}" placeholder="Pickup code" inputmode="text" autocomplete="one-time-code" maxlength="8" minlength="8" aria-label="Shopper pickup code">
+        <input data-code-input="${esc(order.id)}" value="${draft}" placeholder="Pickup code" inputmode="text" autocomplete="one-time-code" maxlength="8" minlength="8" aria-label="Shopper pickup code">
         <button class="btn btn-primary" data-complete="${esc(order.id)}">Verify</button>
       </div>`;
     }

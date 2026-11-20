@@ -38,6 +38,7 @@ export const state = {
     queueFilters: { status: 'active', q: '', date: '' },
     settings: null, settingsLoaded: false,
     seenOrderIds: new Set(), newOrderIds: new Set(),
+    pickupCodeDrafts: new Map(),
   },
 };
 
