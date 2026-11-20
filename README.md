@@ -103,3 +103,7 @@ data/           SQLite databases (gitignored)
 ```
 
 Working in this repo with another agent? Read [AGENTS.md](AGENTS.md) and [FRONTEND-HANDOFF.md](FRONTEND-HANDOFF.md) first.
+
+## License
+
+[MIT](LICENSE) — free to use, modify and redistribute. The backend is zero-dependency Node.js; the Flutter app's packages are pinned in `kirana_mobile/pubspec.yaml`. Seed data is fictional and the imagery pack is original/unbranded (no third-party marks).
